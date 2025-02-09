@@ -28,7 +28,7 @@ Clay_RenderCommandArray UiProcess(AppState * APP) {
 	// Clay Update States
 	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
 	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
-	Clay_UpdateScrollContainers(true, (Clay_Vector2){APP->mouseWheelX, APP->mouseWheelY}, 0.6);
+	Clay_UpdateScrollContainers(true, (Clay_Vector2){APP->mouseWheelX, APP->mouseWheelY}, APP->delta);
 
 	// ========================================
 	// Clay Layout
@@ -132,6 +132,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	APP->img_profile2 = profileTxt2;
 	SDL_DestroySurface(profile2);
 
+	APP->delta_last_time = SDL_GetTicks();
+
 	return SDL_APP_CONTINUE;
 }
 
@@ -166,8 +168,19 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 	return SDL_APP_CONTINUE;
 }
 
+void delta_update(AppState* APP) {
+	const Uint64 currentTime = SDL_GetTicks();
+	const float delta = (float) (currentTime - APP->delta_last_time) / 1000.0f; // Convert to seconds
+	APP->delta_last_time = currentTime;
+	APP->delta = delta;
+}
+
 SDL_AppResult SDL_AppIterate(void* appstate) {
 	AppState* APP = appstate;
+
+	// ==============================
+	// Delta Calculation
+	delta_update(APP);
 
 	// ===============================
 	// SCALE
