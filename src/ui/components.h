@@ -5,6 +5,9 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include "../appstate.h"
+
 void SidebarItemComponent();
+void Profile(AppState* APP);
 
 #endif //COMPONENTS_H

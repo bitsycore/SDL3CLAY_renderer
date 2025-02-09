@@ -6,23 +6,15 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #define CLAY_IMPLEMENTATION
+#include <SDL3_image/SDL_image.h>
+
 #include "../vendor/clay.h"
 
 #include "renderer/clay_renderer_SDL3.h"
 #include "ui/colors.h"
 #include "ui/components.h"
 
-typedef struct {
-	float renderer_zoom;
-	int window_width, window_height;
-	bool isMouseDown;
-	float mousePositionX, mousePositionY;
-	float mouseWheelX, mouseWheelY;
-
-	SDL_Window* window;
-	SDL_Renderer* renderer;
-	Clay_Arena clay_arena;
-} AppState;
+#include "appstate.h"
 
 void HandleClayErrors(Clay_ErrorData errorData) {
 	SDL_Log("%s", errorData.errorText.chars);
@@ -31,7 +23,7 @@ void HandleClayErrors(Clay_ErrorData errorData) {
 	}
 }
 
-Clay_RenderCommandArray UiProcess(const AppState * APP) {
+Clay_RenderCommandArray UiProcess(AppState * APP) {
 	// ========================================
 	// Clay Update States
 	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
@@ -43,11 +35,12 @@ Clay_RenderCommandArray UiProcess(const AppState * APP) {
 	const Clay_ElementDeclaration OuterContainer = {
 		.id = CLAY_ID("OuterContainer"),
 		.layout = {
-			.sizing = {CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)},
+			.sizing = {CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0)},
 			.padding = CLAY_PADDING_ALL(16),
 			.childGap = 16
 		},
-		.backgroundColor = {250, 250, 255, 255}
+		.backgroundColor = {250, 250, 255, 0},
+		.cornerRadius = CLAY_CORNER_RADIUS(8)
 	};
 
 	const Clay_ElementDeclaration SideBar = {
@@ -55,60 +48,37 @@ Clay_RenderCommandArray UiProcess(const AppState * APP) {
 		.layout = {
 			.layoutDirection = CLAY_TOP_TO_BOTTOM,
 			.sizing = {
-				.width = CLAY_SIZING_FIXED(300),
+				.width = CLAY_SIZING_GROW(300),
 				.height = CLAY_SIZING_GROW(0)
 			},
 			.padding = CLAY_PADDING_ALL(16),
 			.childGap = 16
 		},
-		.backgroundColor = COLOR_LIGHT
-	};
-
-	const Clay_ElementDeclaration ProfilePictureOuter = {
-		.id = CLAY_ID("ProfilePictureOuter"),
-		.layout = {
-			.sizing = {.width = CLAY_SIZING_GROW(0)},
-			.padding = CLAY_PADDING_ALL(16),
-			.childGap = 16,
-			.childAlignment = {.y = CLAY_ALIGN_Y_CENTER}
-		},
-		.backgroundColor = COLOR_RED
-	};
-
-	const Clay_ElementDeclaration ProfilePicture = {
-		.id = CLAY_ID("ProfilePicture"),
-		.layout = {
-			.sizing = {
-				.width = CLAY_SIZING_FIXED(60),
-				.height = CLAY_SIZING_FIXED(60)
-			}
-		}
+		.backgroundColor = alphaOverride(COLOR_LIGHT, 0.70f),
+		.cornerRadius = CLAY_CORNER_RADIUS(8)
 	};
 
 	const Clay_ElementDeclaration MainContent = {
 		.id = CLAY_ID("MainContent"),
-		.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}},
-		.backgroundColor = COLOR_LIGHT
+		.layout = {
+			.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(64)},
+			.padding = CLAY_PADDING_ALL(16)
+		},
+		.backgroundColor = COLOR_LIGHT,
+		.cornerRadius = CLAY_CORNER_RADIUS(8)
 	};
 
 	Clay_BeginLayout();
 
 	CLAY(OuterContainer) {
 		CLAY(SideBar) {
-			CLAY(ProfilePictureOuter) {
-				CLAY(ProfilePicture) {}
-				CLAY_TEXT(
-					CLAY_STRING("Clay - UI Library"),
-					CLAY_TEXT_CONFIG({ .fontSize = 24, .textColor = {255, 255, 255, 255} })
-				);
-			}
+			Profile(APP);
 
-			// Standard C code like loops etc work inside components
 			for (int i = 0; i < 5; i++) {
 				SidebarItemComponent();
 			}
 
-			CLAY(MainContent) {}
+			CLAY(MainContent) { SidebarItemComponent(); }
 		}
 	}
 
@@ -152,6 +122,16 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	Clay_SetDebugModeEnabled(true);
 	Clay_SetMeasureTextFunction(SDL_Clay_MeasureText, *appstate);
 
+	SDL_Surface* profile = IMG_Load("assets/avatar.jpg");
+	SDL_Texture* profileTxt = SDL_CreateTextureFromSurface(APP->renderer, profile);
+	APP->img_profile = profileTxt;
+	SDL_DestroySurface(profile);
+
+	SDL_Surface* profile2 = IMG_Load("assets/avatar2.png");
+	SDL_Texture* profileTxt2 = SDL_CreateTextureFromSurface(APP->renderer, profile2);
+	APP->img_profile2 = profileTxt2;
+	SDL_DestroySurface(profile2);
+
 	return SDL_APP_CONTINUE;
 }
 
@@ -187,7 +167,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 }
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
-	const AppState* APP = appstate;
+	AppState* APP = appstate;
 
 	// ===============================
 	// SCALE

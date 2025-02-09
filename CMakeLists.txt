@@ -19,10 +19,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(SDL3)
 
 # ============================================================================================
-# MARK: SDL3_ttf
+# MARK: SDL3_image
 # ============================================================================================
 
-# HOW TO DO THAT ?
+FetchContent_Declare(
+        SDL3_image
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+        GIT_TAG release-3.2.0
+)
+FetchContent_MakeAvailable(SDL3_image)
+
+# ============================================================================================
+# MARK: SDL3_ttf
+# ============================================================================================
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     if(APPLE OR UNIX)
@@ -45,11 +54,12 @@ add_executable(Test
         src/renderer/clay_renderer_SDL3.c
         src/ui/components.c
         src/ui/components.h
-        src/ui/colors.c
         src/ui/colors.h
+        src/ui/colors.c
+        src/appstate.h
 )
 
-target_link_libraries(Test PRIVATE SDL3-shared SDL3_ttf::SDL3_ttf-shared)
+target_link_libraries(Test PRIVATE SDL3-shared SDL3_image::SDL3_image-shared SDL3_ttf::SDL3_ttf-shared)
 
 # ============================================================================================
 # MARK: Post Build
