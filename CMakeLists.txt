@@ -33,17 +33,40 @@ FetchContent_MakeAvailable(SDL3_image)
 # MARK: SDL3_ttf
 # ============================================================================================
 
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-    if(APPLE OR UNIX)
-        find_package(SDL3_ttf REQUIRED)
-    else()
-        include("vendor/SDL3_ttf/mingw/cmake/SDL3_ttfConfig.cmake")
-    endif()
-elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-    include("vendor/SDL3_ttf/vc/cmake/SDL3_ttfConfig.cmake")
-else()
-    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_C_COMPILER_ID}")
-endif()
+if (NOT USE_FETCHCONTENT)
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if (APPLE OR UNIX)
+            find_package(SDL3_ttf)
+            if (NOT SDL3_TTF_FOUND)
+                set(USE_FETCHCONTENT TRUE)
+            endif ()
+        else ()
+            if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3_ttf/mingw/cmake/SDL3_ttfConfig.cmake")
+                include("vendor/SDL3_ttf/mingw/cmake/SDL3_ttfConfig.cmake")
+            else ()
+                set(USE_FETCHCONTENT TRUE)
+            endif ()
+        endif ()
+    elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+        if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3_ttf/vc/cmake/SDL3_ttfConfig.cmake")
+            include("vendor/SDL3_ttf/vc/cmake/SDL3_ttfConfig.cmake")
+        else ()
+            set(USE_FETCHCONTENT TRUE)
+        endif ()
+    else ()
+        message(WARNING "Unsupported compiler: ${CMAKE_C_COMPILER_ID}")
+    endif ()
+endif ()
+
+if (USE_FETCHCONTENT)
+    message(WARNING "SDL3_ttf not found, falling back to FetchContent.")
+    FetchContent_Declare(
+            SDL3_ttf
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
+            GIT_TAG preview-3.1.0
+    )
+    FetchContent_MakeAvailable(SDL3_ttf)
+endif ()
 
 # ============================================================================================
 # MARK: Executable
@@ -59,23 +82,23 @@ add_executable(Test
         src/appstate.h
 )
 
-target_link_libraries(Test PRIVATE SDL3-shared SDL3_image::SDL3_image-shared SDL3_ttf::SDL3_ttf-shared)
+target_link_libraries(
+        Test PRIVATE
+        SDL3::SDL3-shared
+        SDL3_image::SDL3_image-shared
+        SDL3_ttf::SDL3_ttf-shared
+)
 
 # ============================================================================================
 # MARK: Post Build
 # ============================================================================================
 
-# Copy SDL2.dll to runtime folder
+# Copy SDL3 shared libraries to runtime folder
 add_custom_command(TARGET Test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:SDL3-shared>
-        $<TARGET_FILE_DIR:Test>
-)
-
-# Copy SDL2_ttf.dll to runtime folder
-add_custom_command(TARGET Test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:SDL3_ttf::SDL3_ttf>
+        $<TARGET_FILE:SDL3_image::SDL3_image>
         $<TARGET_FILE_DIR:Test>
 )
 
