@@ -8,8 +8,8 @@
 
 #include "colors.h"
 
-void SidebarItemComponent() {
-	const Clay_ElementDeclaration sidebarItemConfig = {
+void SidebarItemComponent(const int i) {
+	CLAY({
 		.border = {
 			.width = CLAY_BORDER_ALL(8),
 			.color = COLOR_RED
@@ -17,16 +17,19 @@ void SidebarItemComponent() {
 		.layout = {
 			.sizing = {
 				.width = CLAY_SIZING_GROW(0),
-				.height = CLAY_SIZING_FIXED(50)
+				.height = CLAY_SIZING_FIT(50)
 			},
-			.padding = CLAY_PADDING_ALL(16)
+			.padding = CLAY_PADDING_ALL(24),
+			.childAlignment = {
+				.x = CLAY_ALIGN_X_CENTER,
+				.y = CLAY_ALIGN_Y_CENTER
+			},
+			.childGap = 16
 		},
-		.backgroundColor = COLOR_ORANGE,
-		.cornerRadius = CLAY_CORNER_RADIUS(8)
-	};
-
-	CLAY(sidebarItemConfig) {
-		CLAY_TEXT(CLAY_STRING("Sidebar Item"), CLAY_TEXT_CONFIG({.fontSize = 16, .textColor = {255, 255, 255, 255}}));
+		.backgroundColor = Clay_Hovered() ? COLOR_RED : COLOR_ORANGE,
+		.cornerRadius = Clay_Hovered() ? CLAY_CORNER_RADIUS(16) : CLAY_CORNER_RADIUS(64)
+	}) {
+		CLAY_TEXT(CLAY_STRING("Sidebar Item"), CLAY_TEXT_CONFIG({.fontSize = i, .textColor = {255, 255, 255, 255}}));
 	}
 }
 
@@ -34,15 +37,15 @@ typedef struct {
 	AppState *app_state;
 } ButtonData ;
 
-void HandleButtonInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, uintptr_t userData) {
+void HandleButtonInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
 	if (!userData) {
-		SDL_Log("userData is nullptr!\n");
+		SDL_Log("userData is NULL!\n");
 		return;
 	}
 
 	const ButtonData *buttonData = (ButtonData*)userData;
 	if (!buttonData->app_state) {
-		SDL_Log("buttonData->app_state is nullptr!\n");
+		SDL_Log("buttonData->app_state is NULL!\n");
 		return;
 	}
 
@@ -86,11 +89,11 @@ void Profile(AppState* APP) {
 	CLAY(ProfilePictureOuter) {
 		CLAY(ProfilePicture) {
 			BUTTON_DATA.app_state = APP;
-			Clay_OnHover(HandleButtonInteraction, &BUTTON_DATA);
+			Clay_OnHover(HandleButtonInteraction, (intptr_t) &BUTTON_DATA);
 		}
 		CLAY_TEXT(
 			CLAY_STRING("Clay - UI Library"),
-			CLAY_TEXT_CONFIG({ .fontSize = 24, .textColor = {255, 255, 255, 255} })
+			CLAY_TEXT_CONFIG({ .fontSize = 32, .textColor = {255, 255, 255, 255} })
 		);
 	}
 }

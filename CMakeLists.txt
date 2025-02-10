@@ -74,7 +74,7 @@ endif ()
 
 add_executable(Test
         src/main.c
-        src/renderer/clay_renderer_SDL3.c
+        src/renderer/SDL3CLAY.c
         src/ui/components.c
         src/ui/components.h
         src/ui/colors.h

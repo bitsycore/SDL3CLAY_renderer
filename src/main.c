@@ -1,25 +1,31 @@
 #include <stdlib.h>
 
+// SDL
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
-
-#define CLAY_IMPLEMENTATION
 #include <SDL3_image/SDL_image.h>
 
+// CLAY
+#define CLAY_IMPLEMENTATION
 #include "../vendor/clay.h"
+#include "renderer/SDL3CLAY.h"
 
-#include "renderer/clay_renderer_SDL3.h"
 #include "ui/colors.h"
 #include "ui/components.h"
-
 #include "appstate.h"
 
 void HandleClayErrors(Clay_ErrorData errorData) {
 	SDL_Log("%s", errorData.errorText.chars);
 	switch (errorData.errorType) {
 		default:
+	}
+}
+
+void ButtonDebug (Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+	if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+		Clay_SetDebugModeEnabled(true);
 	}
 }
 
@@ -36,11 +42,8 @@ Clay_RenderCommandArray ClayProcess(AppState * APP) {
 		.id = CLAY_ID("OuterContainer"),
 		.layout = {
 			.sizing = {CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0)},
-			.padding = CLAY_PADDING_ALL(16),
-			.childGap = 16
-		},
-		.backgroundColor = {250, 250, 255, 0},
-		.cornerRadius = CLAY_CORNER_RADIUS(8)
+			.padding = CLAY_PADDING_ALL(16)
+		}
 	};
 
 	const Clay_ElementDeclaration SideBar = {
@@ -54,18 +57,24 @@ Clay_RenderCommandArray ClayProcess(AppState * APP) {
 			.padding = CLAY_PADDING_ALL(16),
 			.childGap = 16,
 		},
-		.backgroundColor = alphaOverride(COLOR_LIGHT, 0.70f),
+		.backgroundColor = Color_AlphaOver(COLOR_LIGHT, 0.70f),
 		.cornerRadius = CLAY_CORNER_RADIUS(8),
-		.scroll =  (Clay_ScrollElementConfig) {
+		.scroll = {
 			.vertical = true
+		},
+		.border = {
+			.width = CLAY_BORDER_OUTSIDE(2),
+			.color = Color_AlphaOver(COLOR_BLACK, 0.5f)
 		}
 	};
 
 	const Clay_ElementDeclaration MainContent = {
 		.id = CLAY_ID("MainContent"),
 		.layout = {
-			.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(64)},
-			.padding = CLAY_PADDING_ALL(16)
+			.sizing = {
+				.width = CLAY_SIZING_GROW(0),
+				.height = CLAY_SIZING_FIT()},
+			.padding = CLAY_PADDING_ALL(64)
 		},
 		.backgroundColor = COLOR_DARK,
 		.cornerRadius = CLAY_CORNER_RADIUS(8)
@@ -73,15 +82,40 @@ Clay_RenderCommandArray ClayProcess(AppState * APP) {
 
 	Clay_BeginLayout();
 
+	const Clay_Context* context = Clay_GetCurrentContext();
+	if (!context->debugModeEnabled) {
+		CLAY({
+		     .id = CLAY_ID("Tooltip"),
+		     .floating = {
+			     .attachPoints = {
+				     .element = CLAY_ATTACH_POINT_RIGHT_TOP,
+				     .parent = CLAY_ATTACH_POINT_RIGHT_TOP
+			     },
+			     .attachTo = CLAY_ATTACH_TO_ROOT
+		     },
+		     .border = {
+			     .width = CLAY_BORDER_OUTSIDE(2),
+			     .color = COLOR_BLACK
+		     },
+		     .layout = {
+				.padding = CLAY_PADDING_ALL(8)
+		     },
+		     .backgroundColor = Clay_Hovered() ? Color_AlphaOver(COLOR_RED, 1.0f) : Color_AlphaOver(COLOR_RED, 0.5f),
+		}) {
+			CLAY_TEXT(CLAY_STRING("DEBUG"), CLAY_TEXT_CONFIG({.fontSize = 15, .textColor = {255, 255, 255, 255}}));
+			Clay_OnHover(ButtonDebug, 0);
+		}
+	}
+
 	CLAY(OuterContainer) {
 		CLAY(SideBar) {
 			Profile(APP);
 
 			for (int i = 0; i < 30; i++) {
-				SidebarItemComponent();
+				SidebarItemComponent(i % 5 * 16);
 			}
 
-			CLAY(MainContent) { SidebarItemComponent(); }
+			CLAY(MainContent) { SidebarItemComponent(32); }
 		}
 	}
 
@@ -99,7 +133,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 	*appstate = APP;
 
-	APP->renderer_zoom = 1.0f;
+	APP->renderer_zoom = 7.0f;
 	APP->scroll_speed = 3.1f;
 	APP->window_height = 720;
 	APP->window_width = 1280;
@@ -121,9 +155,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 		(Clay_ErrorHandler){HandleClayErrors }
 	);
 
-	SDLCLAY_SetFont("assets/Roboto-Regular.ttf");
+	SDLCLAY_AddFont("assets/Roboto-Regular.ttf", 16);
+
 	Clay_SetDebugModeEnabled(true);
-	Clay_SetMeasureTextFunction(SDLCLAY_MeasureText, *appstate);
+	Clay_SetMeasureTextFunction(SDLCLAY_MeasureText, NULL);
 
 	APP->img_profile = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
 	APP->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
@@ -191,7 +226,7 @@ void delta_update(AppState* APP) {
 }
 
 void reset_end_loop(AppState *APP) {
-	// Reset Mousewheel
+	// Reset Mouse wheel
 	APP->mouseWheelX = 0;
 	APP->mouseWheelY = 0;
 }
@@ -224,7 +259,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 	// ===============================
 	// CLAY UI RENDER
 	Clay_RenderCommandArray commands = ClayProcess(APP);
-	SDLCLAY_Render(APP->renderer, &commands);
+	SDLCLAY_RenderCommands(APP->renderer, &commands);
 
 	// ===============================
 	// FLIP
@@ -236,5 +271,6 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 }
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+	SDLCLAY_Quit();
 	SDL_free(appstate);
 }

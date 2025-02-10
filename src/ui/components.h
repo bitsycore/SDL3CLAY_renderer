@@ -7,7 +7,7 @@
 
 #include "../appstate.h"
 
-void SidebarItemComponent();
+void SidebarItemComponent(int i);
 void Profile(AppState* APP);
 
 #endif //COMPONENTS_H
