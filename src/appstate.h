@@ -18,11 +18,11 @@ typedef struct {
 	float mouseWheelX, mouseWheelY;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	Clay_Arena clay_arena;
 	SDL_Texture* img_profile;
 	SDL_Texture* img_profile2;
 	Uint64 delta_last_time;
 	float delta;
+	float scroll_speed;
 } AppState;
 
 #endif //APPSTATE_H

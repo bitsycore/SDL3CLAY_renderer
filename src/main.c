@@ -23,12 +23,12 @@ void HandleClayErrors(Clay_ErrorData errorData) {
 	}
 }
 
-Clay_RenderCommandArray UiProcess(AppState * APP) {
+Clay_RenderCommandArray ClayProcess(AppState * APP) {
 	// ========================================
 	// Clay Update States
 	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
 	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
-	Clay_UpdateScrollContainers(true, (Clay_Vector2){APP->mouseWheelX, APP->mouseWheelY}, APP->delta);
+	Clay_UpdateScrollContainers(true, (Clay_Vector2){ APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed }, APP->delta);
 
 	// ========================================
 	// Clay Layout
@@ -64,7 +64,7 @@ Clay_RenderCommandArray UiProcess(AppState * APP) {
 			.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(64)},
 			.padding = CLAY_PADDING_ALL(16)
 		},
-		.backgroundColor = COLOR_LIGHT,
+		.backgroundColor = COLOR_DARK,
 		.cornerRadius = CLAY_CORNER_RADIUS(8)
 	};
 
@@ -74,7 +74,7 @@ Clay_RenderCommandArray UiProcess(AppState * APP) {
 		CLAY(SideBar) {
 			Profile(APP);
 
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 50; i++) {
 				SidebarItemComponent();
 			}
 
@@ -97,43 +97,35 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	*appstate = APP;
 
 	APP->renderer_zoom = 1.0f;
-	APP->window_height = 600;
-	APP->window_width = 800;
+	APP->scroll_speed = 3.1f;
+	APP->window_height = 720;
+	APP->window_width = 1280;
 
 	// Initialize SDL
-	if (!SDL_CreateWindowAndRenderer("Hello World", 800, 600, SDL_WINDOW_RESIZABLE, &APP->window, &APP->renderer)) {
+	if (!SDL_CreateWindowAndRenderer("Hello World", APP->window_width, APP->window_height, SDL_WINDOW_RESIZABLE, &APP->window, &APP->renderer)) {
 		SDL_Log("Couldn't create window and renderer: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
 	}
-
 	TTF_Init();
 
 	// Initialize Clay
 	const uint64_t totalMemorySize = Clay_MinMemorySize();
-	APP->clay_arena = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
+	const Clay_Arena clay_arena = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
 
 	Clay_Initialize(
-		APP->clay_arena,
+		clay_arena,
 		(Clay_Dimensions){(float) APP->window_width, (float) APP->window_height},
-		(Clay_ErrorHandler){HandleClayErrors}
+		(Clay_ErrorHandler){HandleClayErrors }
 	);
 
-	Clay_SDL_SetFont("assets/Roboto-Regular.ttf");
+	SDLCLAY_SetFont("assets/Roboto-Regular.ttf");
 	Clay_SetDebugModeEnabled(true);
-	Clay_SetMeasureTextFunction(SDL_Clay_MeasureText, *appstate);
+	Clay_SetMeasureTextFunction(SDLCLAY_MeasureText, *appstate);
 
-	SDL_Surface* profile = IMG_Load("assets/avatar.jpg");
-	SDL_Texture* profileTxt = SDL_CreateTextureFromSurface(APP->renderer, profile);
-	APP->img_profile = profileTxt;
-	SDL_DestroySurface(profile);
-
-	SDL_Surface* profile2 = IMG_Load("assets/avatar2.png");
-	SDL_Texture* profileTxt2 = SDL_CreateTextureFromSurface(APP->renderer, profile2);
-	APP->img_profile2 = profileTxt2;
-	SDL_DestroySurface(profile2);
+	APP->img_profile = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
+	APP->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
 
 	APP->delta_last_time = SDL_GetTicks();
-
 	return SDL_APP_CONTINUE;
 }
 
@@ -141,26 +133,46 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 	AppState* APP = appstate;
 
 	switch (event->type) {
+		// ===============================
+		// WINDOW EVENTS
 		case SDL_EVENT_WINDOW_RESIZED:
 			APP->window_width = event->window.data1;
 			APP->window_height = event->window.data2;
 			break;
+		// ===============================
+		// MOUSE EVENTS
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 			APP->isMouseDown = true;
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 			APP->isMouseDown = false;
 			break;
-		case SDL_EVENT_QUIT:
-			return SDL_APP_SUCCESS;
 		case SDL_EVENT_MOUSE_MOTION:
 			APP->mousePositionX = event->motion.x;
 			APP->mousePositionY = event->motion.y;
-			break;
+		break;
 		case SDL_EVENT_MOUSE_WHEEL:
 			APP->mouseWheelX = event->wheel.x;
 			APP->mouseWheelY = event->wheel.y;
+		break;
+		// ===============================
+		// KEYBOARD EVENTS
+		case SDL_EVENT_KEY_DOWN:
+			switch (event->key.key) {
+				case SDLK_KP_PLUS:
+					APP->renderer_zoom += 0.1f;
+					break;
+				case SDLK_KP_MINUS:
+					APP->renderer_zoom -= 0.1f;
+					break;
+				default:
+					break;
+			}
 			break;
+		// ===============================
+		// APP EVENT
+		case SDL_EVENT_QUIT:
+			return SDL_APP_SUCCESS;
 		default:
 			break;
 	}
@@ -173,6 +185,12 @@ void delta_update(AppState* APP) {
 	const float delta = (float) (currentTime - APP->delta_last_time) / 1000.0f; // Convert to seconds
 	APP->delta_last_time = currentTime;
 	APP->delta = delta;
+}
+
+void reset_end_loop(AppState *APP) {
+	// Reset Mousewheel
+	APP->mouseWheelX = 0;
+	APP->mouseWheelY = 0;
 }
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
@@ -193,7 +211,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 	SDL_RenderClear(APP->renderer);
 
 	// ===============================
-	// TEXT RENDER
+	// CENTERED TEXT RENDER
 	const char* message = "Hello World!";
 	const float x = ((float) APP->window_width / scale - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE * SDL_strlen(message)) / 2;
 	const float y = ((float) APP->window_height / scale - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE) / 2;
@@ -202,12 +220,14 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
 	// ===============================
 	// CLAY UI RENDER
-	Clay_RenderCommandArray commands = UiProcess(APP);
-	SDL_Clay_RenderClayCommands(APP->renderer, &commands);
+	Clay_RenderCommandArray commands = ClayProcess(APP);
+	SDLCLAY_Render(APP->renderer, &commands);
 
 	// ===============================
 	// FLIP
 	SDL_RenderPresent(APP->renderer);
+
+	reset_end_loop(APP);
 
 	return SDL_APP_CONTINUE;
 }

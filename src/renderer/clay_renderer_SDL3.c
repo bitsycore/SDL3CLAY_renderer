@@ -6,23 +6,22 @@
 static TTF_Font* gFonts[1];
 static int NUM_CIRCLE_SEGMENTS = 32;
 
-void Clay_SDL_SetFont(const char* fontPath) {
+void SDLCLAY_SetFont(const char* fontPath) {
 	gFonts[0] = TTF_OpenFont(fontPath, 16);
 	if (gFonts[0] == NULL) {
 		SDL_Log("Failed to load font: %s", SDL_GetError());
 	}
 }
 
-TTF_Font* Clay_SDL_GetFont() {
+TTF_Font* SDLCLAY_GetFont() {
 	return gFonts[0];
 }
 
-static void Clay_SDL_DrawColor(SDL_Renderer* renderer, const Clay_Color color) {
+static void SDLCLAY_SetRenderDrawColor(SDL_Renderer* renderer, const Clay_Color color) {
 	SDL_SetRenderDrawColor(renderer, (int) color.r, (int) color.g, (int) color.b, (int) color.a);
 }
 
-//all rendering is performed by a single SDL call, avoiding multiple RenderRect + plumbing choice for circles.
-static void SDL_RenderFillRoundedRect(
+static void SDLCLAY_RenderFillRoundedRect(
 	SDL_Renderer* renderer,
 	const SDL_FRect rect,
 	const float cornerRadius,
@@ -44,7 +43,9 @@ static void SDL_RenderFillRoundedRect(
 	int indices[totalIndices];
 
 	//define center rectangle
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + clampedRadius, rect.y + clampedRadius}, color, {0, 0}};
+	vertices[vertexCount++] = (SDL_Vertex){
+		{rect.x + clampedRadius, rect.y + clampedRadius}, color, {0, 0}
+	};
 	//0 center TL
 	vertices[vertexCount++] = (SDL_Vertex){
 		{rect.x + rect.w - clampedRadius, rect.y + clampedRadius}, color, {1, 0}
@@ -159,7 +160,7 @@ static void SDL_RenderFillRoundedRect(
 }
 
 
-static void SDL_RenderRoundedBorder(
+static void SDLCLAY_RenderRoundedBorder(
 	SDL_Renderer* renderer,
 	const SDL_FRect base_rect,
 	const float corner_radius,
@@ -170,7 +171,7 @@ static void SDL_RenderRoundedBorder(
 	SDL_GetRenderDrawBlendMode(renderer, &blend_mode);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-	Clay_SDL_DrawColor(renderer, color);
+	SDLCLAY_SetRenderDrawColor(renderer, color);
 	SDL_RenderRect(renderer, &base_rect);
 
 	SDL_SetRenderDrawBlendMode(renderer, blend_mode);
@@ -202,7 +203,7 @@ static void SDL_RenderRoundedBorder(
 	// SDL_SetRenderDrawBlendMode(renderer, blend_mode);
 }
 
-void SDL_RenderArc(SDL_Renderer* renderer, SDL_FPoint center, float radius, float startAngle, float endAngle, float thickness) {
+static void SDLCLAY_RenderArc(SDL_Renderer* renderer, SDL_FPoint center, float radius, float startAngle, float endAngle, float thickness) {
 	if (renderer == NULL) {
         SDL_Log("SDL_RenderArc: Renderer is NULL");
         return;
@@ -264,13 +265,15 @@ void SDL_RenderArc(SDL_Renderer* renderer, SDL_FPoint center, float radius, floa
 }
 
 // ReSharper disable once CppParameterMayBeConst
-Clay_Dimensions SDL_Clay_MeasureText(
+Clay_Dimensions SDLCLAY_MeasureText(
 	Clay_StringSlice text,
-	/*ReSharper disable once CppParameterNeverUsed*/ Clay_TextElementConfig* config,
-	/*ReSharper disable once CppParameterNeverUsed*/ void* userData
+	/*ReSharper disable once CppParameterNeverUsed*/
+	Clay_TextElementConfig* config,
+	/*ReSharper disable once CppParameterNeverUsed*/
+	void* userData
 ) {
 	int width = 0;
-	TTF_Font* font = Clay_SDL_GetFont();
+	TTF_Font* font = SDLCLAY_GetFont();
 	const int height = TTF_GetFontHeight(font);
 	TTF_MeasureString(font, text.chars, text.length, 0, &width, NULL);
 	const Clay_Dimensions result = {
@@ -280,7 +283,19 @@ Clay_Dimensions SDL_Clay_MeasureText(
 	return result;
 }
 
-void SDL_Clay_RenderClayCommands(SDL_Renderer* renderer, Clay_RenderCommandArray* commands_array) {
+void SDLCLAY_Render(SDL_Renderer* renderer, Clay_RenderCommandArray* commands_array) {
+	// Get Current Renderer size
+	int w = 0, h = 0;
+	SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
+
+	// Create a texture as target
+	SDL_Texture* texture_target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
+	SDL_SetRenderTarget(renderer,texture_target);
+
+	// Clear
+	SDL_SetRenderDrawColor(renderer, 0,0,0,0);
+	SDL_RenderClear(renderer);
+
 	for (int32_t i = 0; i < commands_array->length; i++) {
 		const Clay_RenderCommand* render_command = Clay_RenderCommandArray_Get(commands_array, i);
 		const Clay_BoundingBox bounding_box = render_command->boundingBox;
@@ -294,12 +309,12 @@ void SDL_Clay_RenderClayCommands(SDL_Renderer* renderer, Clay_RenderCommandArray
 			// ====================================================================
 			case CLAY_RENDER_COMMAND_TYPE_RECTANGLE: {
 				const Clay_RectangleRenderData* config = &render_command->renderData.rectangle;
-				Clay_SDL_DrawColor(renderer, config->backgroundColor);
+				SDLCLAY_SetRenderDrawColor(renderer, config->backgroundColor);
 				SDL_BlendMode blendMode = {0};
 				SDL_GetRenderDrawBlendMode(renderer, &blendMode);
 				SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 				if (config->cornerRadius.topLeft > 0) {
-					SDL_RenderFillRoundedRect(renderer, f_rect, config->cornerRadius.topLeft, config->backgroundColor);
+					SDLCLAY_RenderFillRoundedRect(renderer, f_rect, config->cornerRadius.topLeft, config->backgroundColor);
 				} else {
 					SDL_RenderFillRect(renderer, &f_rect);
 				}
@@ -317,8 +332,10 @@ void SDL_Clay_RenderClayCommands(SDL_Renderer* renderer, Clay_RenderCommandArray
 				};
 				TTF_Font* font = gFonts[0];
 				SDL_Surface* surface = TTF_RenderText_Blended(
-					font, config->stringContents.chars,
-					config->stringContents.length, color
+					font,
+					config->stringContents.chars,
+					config->stringContents.length,
+					color
 				);
 				SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 				SDL_RenderTexture(renderer, texture, NULL, &f_rect);
@@ -330,18 +347,14 @@ void SDL_Clay_RenderClayCommands(SDL_Renderer* renderer, Clay_RenderCommandArray
 			// BORDER
 			// ====================================================================
 			case CLAY_RENDER_COMMAND_TYPE_BORDER: {
-				//SDL_SetRenderClipRect(renderer, &rect);
 				const Clay_BorderRenderData* config = &render_command->renderData.border;
-
-				SDL_RenderRoundedBorder(
+				SDLCLAY_RenderRoundedBorder(
 					renderer,
 					f_rect,
 					config->cornerRadius.topLeft,
 					config->width.top,
 					config->color
 				);
-
-				//SDL_SetRenderClipRect(renderer, NULL);
 			}
 			break;
 			// ====================================================================
@@ -371,4 +384,12 @@ void SDL_Clay_RenderClayCommands(SDL_Renderer* renderer, Clay_RenderCommandArray
 				SDL_Log("Unknown render command type: %d", render_command->commandType);
 		}
 	}
+
+	SDL_BlendMode blend_mode = {};
+	SDL_GetRenderDrawBlendMode(renderer, &blend_mode);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+	SDL_SetRenderTarget(renderer, NULL);
+	SDL_RenderTexture(renderer, texture_target, NULL, NULL);
+	SDL_DestroyTexture(texture_target);
+	SDL_SetRenderDrawBlendMode(renderer, blend_mode);
 }
