@@ -10,12 +10,16 @@
 
 void SidebarItemComponent() {
 	const Clay_ElementDeclaration sidebarItemConfig = {
+		.border = {
+			.width = CLAY_BORDER_ALL(8),
+			.color = COLOR_RED
+		},
 		.layout = {
 			.sizing = {
 				.width = CLAY_SIZING_GROW(0),
 				.height = CLAY_SIZING_FIXED(50)
 			},
-			.padding = CLAY_PADDING_ALL(8)
+			.padding = CLAY_PADDING_ALL(16)
 		},
 		.backgroundColor = COLOR_ORANGE,
 		.cornerRadius = CLAY_CORNER_RADIUS(8)
@@ -30,13 +34,13 @@ typedef struct {
 	AppState *app_state;
 } ButtonData ;
 
-void HandleButtonInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+void HandleButtonInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, uintptr_t userData) {
 	if (!userData) {
 		SDL_Log("userData is nullptr!\n");
 		return;
 	}
 
-	ButtonData *buttonData = userData;
+	const ButtonData *buttonData = (ButtonData*)userData;
 	if (!buttonData->app_state) {
 		SDL_Log("buttonData->app_state is nullptr!\n");
 		return;
@@ -49,7 +53,7 @@ void HandleButtonInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
 	}
 }
 
-ButtonData linkButton = (ButtonData) {  };
+ButtonData BUTTON_DATA = (ButtonData) {};
 
 void Profile(AppState* APP) {
 	const Clay_ElementDeclaration ProfilePictureOuter = {
@@ -81,8 +85,8 @@ void Profile(AppState* APP) {
 
 	CLAY(ProfilePictureOuter) {
 		CLAY(ProfilePicture) {
-			linkButton.app_state = APP;
-			Clay_OnHover(HandleButtonInteraction, &linkButton);
+			BUTTON_DATA.app_state = APP;
+			Clay_OnHover(HandleButtonInteraction, &BUTTON_DATA);
 		}
 		CLAY_TEXT(
 			CLAY_STRING("Clay - UI Library"),

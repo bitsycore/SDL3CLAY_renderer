@@ -52,10 +52,13 @@ Clay_RenderCommandArray ClayProcess(AppState * APP) {
 				.height = CLAY_SIZING_GROW(0)
 			},
 			.padding = CLAY_PADDING_ALL(16),
-			.childGap = 16
+			.childGap = 16,
 		},
 		.backgroundColor = alphaOverride(COLOR_LIGHT, 0.70f),
-		.cornerRadius = CLAY_CORNER_RADIUS(8)
+		.cornerRadius = CLAY_CORNER_RADIUS(8),
+		.scroll =  (Clay_ScrollElementConfig) {
+			.vertical = true
+		}
 	};
 
 	const Clay_ElementDeclaration MainContent = {
@@ -74,7 +77,7 @@ Clay_RenderCommandArray ClayProcess(AppState * APP) {
 		CLAY(SideBar) {
 			Profile(APP);
 
-			for (int i = 0; i < 50; i++) {
+			for (int i = 0; i < 30; i++) {
 				SidebarItemComponent();
 			}
 
