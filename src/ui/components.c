@@ -11,7 +11,7 @@
 void SidebarItemComponent(const int i) {
 	CLAY({
 		.border = {
-			.width = CLAY_BORDER_ALL(8),
+			.width = CLAY_BORDER_ALL(i),
 			.color = COLOR_RED
 		},
 		.layout = {
@@ -26,8 +26,8 @@ void SidebarItemComponent(const int i) {
 			},
 			.childGap = 16
 		},
-		.backgroundColor = Clay_Hovered() ? COLOR_RED : COLOR_ORANGE,
-		.cornerRadius = Clay_Hovered() ? CLAY_CORNER_RADIUS(16) : CLAY_CORNER_RADIUS(64)
+		.backgroundColor = Clay_Hovered() ? COLOR_DARK : COLOR_ORANGE,
+		.cornerRadius = Clay_Hovered() ? CLAY_CORNER_RADIUS(16) : CLAY_CORNER_RADIUS(32)
 	}) {
 		CLAY_TEXT(CLAY_STRING("Sidebar Item"), CLAY_TEXT_CONFIG({.fontSize = i, .textColor = {255, 255, 255, 255}}));
 	}
