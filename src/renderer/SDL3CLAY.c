@@ -96,7 +96,6 @@ TTF_Font* SDLCLAY_GetFont(const int font_index, const int size) {
 	if (font->ttf_fonts[size] == NULL) {
 		font->ttf_fonts[size] = TTF_CopyFont(font->ttf_fonts[font->init_size]);
 		TTF_SetFontSize(font->ttf_fonts[size], (float)size);
-		SDL_Log("AAAAA");
 	}
 
 	return font->ttf_fonts[size];
@@ -420,7 +419,7 @@ void SDLCLAY_RenderCommands(SDL_Renderer* renderer, Clay_RenderCommandArray* com
 		}
 	}
 
-	SDL_BlendMode blend_mode = {};
+	SDL_BlendMode blend_mode = {0};
 	SDL_GetRenderDrawBlendMode(renderer, &blend_mode);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
