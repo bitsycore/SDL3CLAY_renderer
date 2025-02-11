@@ -5,7 +5,6 @@
 #ifndef APPSTATE_H
 #define APPSTATE_H
 
-#include "../vendor/clay.h"
 #include <stdbool.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
@@ -20,9 +19,13 @@ typedef struct {
 	SDL_Renderer* renderer;
 	SDL_Texture* img_profile;
 	SDL_Texture* img_profile2;
+	void* clay_memory;
 	Uint64 delta_last_time;
 	float delta;
 	float scroll_speed;
 } AppState;
+
+AppState* AppState_new();
+void AppState_destroy(AppState** app_state);
 
 #endif //APPSTATE_H

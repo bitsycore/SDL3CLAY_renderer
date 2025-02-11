@@ -8,6 +8,7 @@
 #include "../appstate.h"
 
 void SidebarItemComponent(int i);
-void Profile(AppState* APP);
+void ProfileComponent(AppState* APP);
+void ButtonDebugComponent();
 
 #endif //COMPONENTS_H

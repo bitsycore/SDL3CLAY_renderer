@@ -3365,6 +3365,11 @@ Clay_Context* Clay_GetCurrentContext(void) {
     return Clay__currentContext;
 }
 
+CLAY_WASM_EXPORT("Clay_DebugModeEnabled")
+bool Clay_DebugModeEnabled(void) {
+    return Clay__currentContext->debugModeEnabled;
+}
+
 CLAY_WASM_EXPORT("Clay_SetCurrentContext")
 void Clay_SetCurrentContext(Clay_Context* context) {
     Clay__currentContext = context;

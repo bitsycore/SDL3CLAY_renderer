@@ -1,8 +1,8 @@
 #include "SDL3CLAY.h"
 
-SDLCLAY_Fun_Logger SDLCLAY_LOG = SDL_Log;
-SDLCLAY_Fun_Malloc SDLCLAY_MALLOC = SDL_malloc;
-SDLCLAY_Fun_Free SDLCLAY_FREE = SDL_free;
+static SDLCLAY_Fun_Logger SDLCLAY_LOG = SDL_Log;
+static SDLCLAY_Fun_Malloc SDLCLAY_MALLOC = SDL_malloc;
+static SDLCLAY_Fun_Free SDLCLAY_FREE = SDL_free;
 
 // ===================================================================================
 // MARK: FONTS
@@ -131,145 +131,271 @@ static void SDLCLAY_SetRenderDrawColor(SDL_Renderer* renderer, const Clay_Color 
 static void SDLCLAY_RenderFillRoundedRect(
 	SDL_Renderer* renderer,
 	const SDL_FRect rect,
-	const float cornerRadius,
-	const Clay_Color _color
+	const float corner_radius,
+	const Clay_Color clay_color
 ) {
-	const SDL_FColor color = {_color.r / 255, _color.g / 255, _color.b / 255, _color.a / 255};
+	const SDL_FColor color = {clay_color.r / 255, clay_color.g / 255, clay_color.b / 255, clay_color.a / 255};
 
-	int indexCount = 0, vertexCount = 0;
+	int index_count = 0, vertex_count = 0;
 
-	const float minRadius = SDL_min(rect.w, rect.h) / 2.0f;
-	const float clampedRadius = SDL_min(cornerRadius, minRadius);
+	const float min_radius = SDL_min(rect.w, rect.h) / 2.0f;
+	const float clamp_radius = SDL_min(corner_radius, min_radius);
 
-	const int numCircleSegments = SDL_max(SDLCLAY_NUM_SEGMENT_CORNER, (int) clampedRadius * 0.5f);
+	const int num_circle_segments = SDL_max(SDLCLAY_NUM_SEGMENT_CORNER, (int) clamp_radius * 0.5f);
+	const int total_vertices = 4 + 4 * (num_circle_segments * 2) + 2 * 4;
+	const int total_indices = 6 + 4 * (num_circle_segments * 3) + 6 * 4;
 
-	int totalVertices = 4 + 4 * (numCircleSegments * 2) + 2 * 4;
-	int totalIndices = 6 + 4 * (numCircleSegments * 3) + 6 * 4;
+	SDL_Vertex vertices[total_vertices];
+	int indices[total_indices];
 
-	SDL_Vertex vertices[totalVertices];
-	int indices[totalIndices];
+	// ==================================
+	// Define center rectangle
+	// ==================================
 
-	//define center rectangle
-	vertices[vertexCount++] = (SDL_Vertex){
-		{rect.x + clampedRadius, rect.y + clampedRadius}, color, {0, 0}
+	// [0] Center Top Left
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + clamp_radius,
+			rect.y + clamp_radius
+		},
+		color,
+		{0, 0}
 	};
-	//0 center TL
-	vertices[vertexCount++] = (SDL_Vertex){
-		{rect.x + rect.w - clampedRadius, rect.y + clampedRadius}, color, {1, 0}
-	}; //1 center TR
-	vertices[vertexCount++] = (SDL_Vertex){
-		{rect.x + rect.w - clampedRadius, rect.y + rect.h - clampedRadius}, color, {1, 1}
-	}; //2 center BR
-	vertices[vertexCount++] = (SDL_Vertex){
-		{rect.x + clampedRadius, rect.y + rect.h - clampedRadius}, color, {0, 1}
-	}; //3 center BL
+	// [1] Center Top Right
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + rect.w - clamp_radius,
+			rect.y + clamp_radius
+		},
+		color,
+		{1, 0}
+	};
+	// [2] Center Bottom Right
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + rect.w - clamp_radius,
+			rect.y + rect.h - clamp_radius
+		},
+		color,
+		{1, 1}
+	};
+	// [3] Center Bottom Left
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + clamp_radius,
+			rect.y + rect.h - clamp_radius
+		},
+		color,
+		{0, 1}
+	};
 
-	indices[indexCount++] = 0;
-	indices[indexCount++] = 1;
-	indices[indexCount++] = 3;
-	indices[indexCount++] = 1;
-	indices[indexCount++] = 2;
-	indices[indexCount++] = 3;
+	indices[index_count++] = 0;
+	indices[index_count++] = 1;
+	indices[index_count++] = 3;
+	indices[index_count++] = 1;
+	indices[index_count++] = 2;
+	indices[index_count++] = 3;
 
-	//define rounded corners as triangle fans
-	const float step = SDL_PI_F / 2.0f / (float) numCircleSegments;
-	for (int i = 0; i < numCircleSegments; i++) {
+	// ==================================
+	// Define rounded corners as triangle fans
+	// ==================================
+
+	const float step = SDL_PI_F / 2.0f / (float) num_circle_segments;
+
+	for (int i = 0; i < num_circle_segments; i++) {
+
 		const float angle1 = (float) i * step;
-		const float angle2 = ((float) i + 1.0f) * step;
+		const float angle2 = (float) (i + 1) * step;
 
+		// Iterate over four corners
 		for (int j = 0; j < 4; j++) {
-			// Iterate over four corners
-			float cx, cy, signX, signY;
+			float cx, cy, sign_x, sign_y;
 
 			switch (j) {
-				case 0: cx = rect.x + clampedRadius;
-					cy = rect.y + clampedRadius;
-					signX = -1;
-					signY = -1;
-					break; // Top-left
-				case 1: cx = rect.x + rect.w - clampedRadius;
-					cy = rect.y + clampedRadius;
-					signX = 1;
-					signY = -1;
-					break; // Top-right
-				case 2: cx = rect.x + rect.w - clampedRadius;
-					cy = rect.y + rect.h - clampedRadius;
-					signX = 1;
-					signY = 1;
-					break; // Bottom-right
-				case 3: cx = rect.x + clampedRadius;
-					cy = rect.y + rect.h - clampedRadius;
-					signX = -1;
-					signY = 1;
-					break; // Bottom-left
-				default: return;
+				case 0: // Top-left
+					cx = rect.x + clamp_radius;
+					cy = rect.y + clamp_radius;
+					sign_x = -1;
+					sign_y = -1;
+					break;
+
+				case 1: // Top-right
+					cx = rect.x + rect.w - clamp_radius;
+					cy = rect.y + clamp_radius;
+					sign_x = 1;
+					sign_y = -1;
+					break;
+				case 2: // Bottom-right
+					cx = rect.x + rect.w - clamp_radius;
+					cy = rect.y + rect.h - clamp_radius;
+					sign_x = 1;
+					sign_y = 1;
+					break;
+				case 3: // Bottom-left
+					cx = rect.x + clamp_radius;
+					cy = rect.y + rect.h - clamp_radius;
+					sign_x = -1;
+					sign_y = 1;
+					break;
+				default:
+					break;
 			}
 
-			vertices[vertexCount++] = (SDL_Vertex){
-				{cx + SDL_cosf(angle1) * clampedRadius * signX, cy + SDL_sinf(angle1) * clampedRadius * signY}, color,
-				{0, 0}
-			};
-			vertices[vertexCount++] = (SDL_Vertex){
-				{cx + SDL_cosf(angle2) * clampedRadius * signX, cy + SDL_sinf(angle2) * clampedRadius * signY}, color,
+			vertices[vertex_count++] = (SDL_Vertex){
+				{
+					cx + SDL_cosf(angle1) * clamp_radius * sign_x,
+					cy + SDL_sinf(angle1) * clamp_radius * sign_y
+				},
+				color,
 				{0, 0}
 			};
 
-			indices[indexCount++] = j; // Connect to corresponding central rectangle vertex
-			indices[indexCount++] = vertexCount - 2;
-			indices[indexCount++] = vertexCount - 1;
+			vertices[vertex_count++] = (SDL_Vertex){
+				{
+					cx + SDL_cosf(angle2) * clamp_radius * sign_x,
+					cy + SDL_sinf(angle2) * clamp_radius * sign_y
+				},
+				color,
+				{0, 0}
+			};
+
+			// Connect to corresponding central rectangle vertex
+			indices[index_count++] = j;
+			indices[index_count++] = vertex_count - 2;
+			indices[index_count++] = vertex_count - 1;
 		}
 	}
 
-	//Define edge rectangles
-	// Top edge
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + clampedRadius, rect.y}, color, {0, 0}}; //TL
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + rect.w - clampedRadius, rect.y}, color, {1, 0}}; //TR
+	// ==================================
+	// Define edges rectangles
+	// ==================================
 
-	indices[indexCount++] = 0;
-	indices[indexCount++] = vertexCount - 2; //TL
-	indices[indexCount++] = vertexCount - 1; //TR
-	indices[indexCount++] = 1;
-	indices[indexCount++] = 0;
-	indices[indexCount++] = vertexCount - 1; //TR
-	// Right edge
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + rect.w, rect.y + clampedRadius}, color, {1, 0}}; //RT
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + rect.w, rect.y + rect.h - clampedRadius}, color, {1, 1}}; //RB
+	// ==================================
+	// Top
+	// ==================================
+	// Top Left
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + clamp_radius,
+			rect.y
+		},
+		color,
+		{0, 0}
+	};
+	// Top Right
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + rect.w - clamp_radius,
+			rect.y
+		},
+		color,
+		{1, 0}
+	};
 
-	indices[indexCount++] = 1;
-	indices[indexCount++] = vertexCount - 2; //RT
-	indices[indexCount++] = vertexCount - 1; //RB
-	indices[indexCount++] = 2;
-	indices[indexCount++] = 1;
-	indices[indexCount++] = vertexCount - 1; //RB
-	// Bottom edge
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + rect.w - clampedRadius, rect.y + rect.h}, color, {1, 1}}; //BR
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x + clampedRadius, rect.y + rect.h}, color, {0, 1}}; //BL
+	indices[index_count++] = 0;
+	indices[index_count++] = vertex_count - 2; //TL
+	indices[index_count++] = vertex_count - 1; //TR
+	indices[index_count++] = 1;
+	indices[index_count++] = 0;
+	indices[index_count++] = vertex_count - 1; //TR
 
-	indices[indexCount++] = 2;
-	indices[indexCount++] = vertexCount - 2; //BR
-	indices[indexCount++] = vertexCount - 1; //BL
-	indices[indexCount++] = 3;
-	indices[indexCount++] = 2;
-	indices[indexCount++] = vertexCount - 1; //BL
-	// Left edge
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x, rect.y + rect.h - clampedRadius}, color, {0, 1}}; //LB
-	vertices[vertexCount++] = (SDL_Vertex){{rect.x, rect.y + clampedRadius}, color, {0, 0}}; //LT
+	// ==================================
+	// Right
+	// ==================================
+	// Right Top
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + rect.w,
+			rect.y + clamp_radius
+		},
+		color,
+		{1, 0}
+	};
+	// Right Bottom
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + rect.w,
+			rect.y + rect.h - clamp_radius
+		},
+		color,
+		{1, 1}
+	};
 
-	indices[indexCount++] = 3;
-	indices[indexCount++] = vertexCount - 2; //LB
-	indices[indexCount++] = vertexCount - 1; //LT
-	indices[indexCount++] = 0;
-	indices[indexCount++] = 3;
-	indices[indexCount++] = vertexCount - 1; //LT
+	indices[index_count++] = 1;
+	indices[index_count++] = vertex_count - 2; //RT
+	indices[index_count++] = vertex_count - 1; //RB
+	indices[index_count++] = 2;
+	indices[index_count++] = 1;
+	indices[index_count++] = vertex_count - 1; //RB
 
+	// ==================================
+	// Bottom
+	// ==================================
+	// Bottom Right
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + rect.w - clamp_radius,
+			rect.y + rect.h
+		},
+		color,
+		{1, 1}
+	};
+	// Bottom Left
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x + clamp_radius,
+			rect.y + rect.h
+		},
+		color,
+		{0, 1}
+	};
 
-	// TODO: Find why this is needed
-	for (int i = 0; i < vertexCount; i++) {
+	indices[index_count++] = 2;
+	indices[index_count++] = vertex_count - 2; //BR
+	indices[index_count++] = vertex_count - 1; //BL
+	indices[index_count++] = 3;
+	indices[index_count++] = 2;
+	indices[index_count++] = vertex_count - 1; //BL
+
+	// ==================================
+	// Left
+	// ==================================
+	// Left Bottom
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x,
+			rect.y + rect.h - clamp_radius
+		},
+		color,
+		{0, 1}
+	};
+	// Left Top
+	vertices[vertex_count++] = (SDL_Vertex){
+		{
+			rect.x,
+			rect.y + clamp_radius
+		},
+		color,
+		{0, 0}
+	};
+
+	indices[index_count++] = 3;
+	indices[index_count++] = vertex_count - 2; //LB
+	indices[index_count++] = vertex_count - 1; //LT
+	indices[index_count++] = 0;
+	indices[index_count++] = 3;
+	indices[index_count++] = vertex_count - 1; //LT
+
+	// ==================================
+	// Draw
+	// ==================================
+
+	// TODO: Temp fix, Find why this is needed and it still look bad
+	for (int i = 0; i < vertex_count; i++) {
 		if (vertices[i].position.y > rect.h) vertices[i].position.y -= 1;
 	}
 
-	// Render everything
-	SDL_RenderGeometry(renderer, NULL, vertices, vertexCount, indices, indexCount);
+	SDL_RenderGeometry(renderer, NULL, vertices, vertex_count, indices, index_count);
 }
 
 
@@ -431,7 +557,7 @@ void SDLCLAY_RenderCommands(SDL_Renderer* renderer, Clay_RenderCommandArray* com
 }
 
 // ===================================================================================
-// MARK: CORE
+// MARK: Misc
 // ===================================================================================
 
 void SDLCLAY_SetLogger(const SDLCLAY_Fun_Logger logger) {

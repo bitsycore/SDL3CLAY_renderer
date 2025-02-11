@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 include(FetchContent)
 
-project(Test C)
+project(SDL3CLAY C)
 set(CMAKE_C_STANDARD 11)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
@@ -72,7 +72,7 @@ endif ()
 # MARK: Executable
 # ============================================================================================
 
-add_executable(Test
+add_executable(SDL3CLAY
         src/main.c
         src/renderer/SDL3CLAY.c
         src/ui/components.c
@@ -80,10 +80,25 @@ add_executable(Test
         src/ui/colors.h
         src/ui/colors.c
         src/appstate.h
+        src/appstate.c
+        src/common/arena.c
+        src/common/arena.h
+        src/common/debug.c
+        src/common/debug.h
+        src/common/error_handling.h
+        src/common/hash.c
+        src/common/hash.h
+        src/common/memory_leak.c
+        src/common/memory_leak.h
+        src/ui/screen_manager.c
+        src/ui/screen_manager.h
+        src/ui/screen1.c
+        src/ui/screen1.h
+
 )
 
 target_link_libraries(
-        Test PRIVATE
+        SDL3CLAY PRIVATE
         SDL3::SDL3-shared
         SDL3_image::SDL3_image-shared
         SDL3_ttf::SDL3_ttf-shared
@@ -94,17 +109,17 @@ target_link_libraries(
 # ============================================================================================
 
 # Copy SDL3 shared libraries to runtime folder
-add_custom_command(TARGET Test POST_BUILD
+add_custom_command(TARGET SDL3CLAY POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:SDL3-shared>
         $<TARGET_FILE:SDL3_ttf::SDL3_ttf>
         $<TARGET_FILE:SDL3_image::SDL3_image>
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:SDL3CLAY>
 )
 
 # Move assets folder to runtime folder
-add_custom_command(TARGET Test POST_BUILD
+add_custom_command(TARGET SDL3CLAY POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:Test>/assets"
+        "$<TARGET_FILE_DIR:SDL3CLAY>/assets"
 )

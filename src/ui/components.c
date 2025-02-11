@@ -8,11 +8,11 @@
 
 #include "colors.h"
 
-void SidebarItemComponent(const int i) {
-	CLAY({
+static Clay_ElementDeclaration SidebarItemConfig() {
+	return (Clay_ElementDeclaration){
 		.border = {
-			.width = CLAY_BORDER_ALL(i),
-			.color = COLOR_RED
+			.width = CLAY_BORDER_ALL(4),
+			.color = COLOR_BLACK_NICE
 		},
 		.layout = {
 			.sizing = {
@@ -26,40 +26,56 @@ void SidebarItemComponent(const int i) {
 			},
 			.childGap = 16
 		},
-		.backgroundColor = Clay_Hovered() ? COLOR_DARK : COLOR_ORANGE,
-		.cornerRadius = Clay_Hovered() ? CLAY_CORNER_RADIUS(16) : CLAY_CORNER_RADIUS(32)
-	}) {
-		CLAY_TEXT(CLAY_STRING("Sidebar Item"), CLAY_TEXT_CONFIG({.fontSize = i, .textColor = {255, 255, 255, 255}}));
+		.backgroundColor = Clay_Hovered() ? COLOR_BLACK_NICE : COLOR_DARK_BLUE,
+		.cornerRadius = CLAY_CORNER_RADIUS(16)
+	};
+}
+
+static void SidebarItemCallback (Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+	if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+		Clay_SetDebugModeEnabled(true);
 	}
 }
 
-typedef struct {
-	AppState *app_state;
-} ButtonData ;
+void SidebarItemComponent(const int i) {
+	CLAY(SidebarItemConfig()) {
+		Clay_OnHover(SidebarItemCallback, (intptr_t)NULL);
+		CLAY_TEXT(
+			CLAY_STRING("Sidebar Item"),
+			CLAY_TEXT_CONFIG(
+				{
+				.fontSize = i,
+				.textColor = Clay_Hovered() ? COLOR_LIGHT : COLOR_WHITE_NICE
+				}
+			)
+		);
+	}
+}
 
-void HandleButtonInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+// ===================================================================================
+//
+// MARK: Profile
+//
+// ===================================================================================
+
+static void ProfileCallback(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
 	if (!userData) {
 		SDL_Log("userData is NULL!\n");
 		return;
 	}
 
-	const ButtonData *buttonData = (ButtonData*)userData;
-	if (!buttonData->app_state) {
-		SDL_Log("buttonData->app_state is NULL!\n");
-		return;
-	}
+	AppState* APP = (AppState*) userData;
 
 	if (pointerInfo.state == CLAY_POINTER_DATA_RELEASED_THIS_FRAME) {
-		SDL_Texture* temp = buttonData->app_state->img_profile;
-		buttonData->app_state->img_profile = buttonData->app_state->img_profile2;
-		buttonData->app_state->img_profile2 = temp;
+		SDL_Texture* temp = APP->img_profile;
+		APP->img_profile = APP->img_profile2;
+		APP->img_profile2 = temp;
 	}
 }
 
-ButtonData BUTTON_DATA = (ButtonData) {};
 
-void Profile(AppState* APP) {
-	const Clay_ElementDeclaration ProfilePictureOuter = {
+void ProfileComponent(AppState* APP) {
+	const Clay_ElementDeclaration ProfilePictureOuterConfig = {
 		.layout = {
 			.sizing = {
 				.width = CLAY_SIZING_GROW(0)
@@ -72,7 +88,7 @@ void Profile(AppState* APP) {
 		.cornerRadius = CLAY_CORNER_RADIUS(8)
 	};
 
-	const Clay_ElementDeclaration ProfilePicture = {
+	const Clay_ElementDeclaration ProfilePictureConfig = {
 		.id = CLAY_ID("ProfilePicture"),
 		.layout = {
 			.sizing = {
@@ -86,14 +102,55 @@ void Profile(AppState* APP) {
 		}
 	};
 
-	CLAY(ProfilePictureOuter) {
-		CLAY(ProfilePicture) {
-			BUTTON_DATA.app_state = APP;
-			Clay_OnHover(HandleButtonInteraction, (intptr_t) &BUTTON_DATA);
+	CLAY(ProfilePictureOuterConfig) {
+		CLAY(ProfilePictureConfig) {
+			Clay_OnHover(ProfileCallback, (intptr_t) APP);
 		}
 		CLAY_TEXT(
 			CLAY_STRING("Clay - UI Library"),
-			CLAY_TEXT_CONFIG({ .fontSize = 32, .textColor = {255, 255, 255, 255} })
+			CLAY_TEXT_CONFIG({ .fontSize = 32, .textColor = COLOR_WHITE_NICE })
 		);
+	}
+}
+
+// ===================================================================================
+//
+// MARK: ButtonDebug
+//
+// ===================================================================================
+
+static Clay_ElementDeclaration ButtonDebugConfig() {
+	return (Clay_ElementDeclaration){
+		.id = CLAY_ID("Tooltip"),
+		.floating = {
+			.attachPoints = {
+				.element = CLAY_ATTACH_POINT_RIGHT_TOP,
+				.parent = CLAY_ATTACH_POINT_RIGHT_TOP
+			},
+			.attachTo = CLAY_ATTACH_TO_ROOT
+		},
+		.border = {
+			.width = CLAY_BORDER_OUTSIDE(2),
+			.color = COLOR_BLACK_NICE
+		},
+		.layout = {
+			.padding = CLAY_PADDING_ALL(8)
+		 },
+		 .backgroundColor = Clay_Hovered() ? AlphaOver(COLOR_RED, 1.0f) : AlphaOver(COLOR_RED, 0.5f),
+	};
+}
+
+static void ButtonDebugCallback (Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+	if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+		Clay_SetDebugModeEnabled(true);
+	}
+}
+
+void ButtonDebugComponent() {
+	if (!Clay_IsDebugModeEnabled()) {
+		CLAY(ButtonDebugConfig()) {
+			CLAY_TEXT(CLAY_STRING("DEBUG"), CLAY_TEXT_CONFIG({.fontSize = 15, .textColor = {255, 255, 255, 255}}));
+			Clay_OnHover(ButtonDebugCallback, 0);
+		}
 	}
 }
