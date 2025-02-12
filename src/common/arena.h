@@ -1,53 +1,54 @@
-//
-// Created by Doge on 07/02/2025.
-//
+#ifndef ARENA2_H
+#define ARENA2_H
 
-#ifndef AREA_H
-#define AREA_H
+#include <stdlib.h>
 
-#include <stdbool.h>
-#include <stddef.h>
+#include "error_handling.h"
 
-// =========================================
-// MARK: CONFIG
-// =========================================
+typedef struct {
+	size_t capacity;
+	void* current;
+	void* buf;
+} arena_t;
 
-#define ARENA_DEFAULT_SIZE (1024 * 1024 * 4)
+static inline size_t arena_required_size(const size_t capacity) {
+	return sizeof(arena_t) + capacity;
+}
 
-// =========================================
-// MARK: Type Definitions
-// =========================================
+static inline arena_t* arena_init(void* buffer, const size_t capacity) {
+	EXIT_IF_NOT(
+		capacity > sizeof(arena_t),
+		"Capacity must be greater than the size of arena_t, "
+		"use arena_required_size to calculate the required size"
+	);
 
-typedef void* (*ArenaAllocFunc)(size_t size);
-typedef void (*ArenaFreeFunc)(void* ptr);
+	arena_t* arena = buffer;
 
-typedef struct Arena {
-	void* start_ptr;
-	void* next_ptr;
-	void* end_ptr;
-	size_t size;
+	arena->capacity = capacity - sizeof(arena_t);
+	arena->buf = (char*)buffer + sizeof(arena_t);
+	arena->current = arena->buf;
 
-	bool expandable;
-	ArenaAllocFunc alloc_func;
-	ArenaFreeFunc free_func;
+	return arena;
+}
 
-	struct Arena* next_arena;
-} Arena;
+static inline void arena_reset(arena_t* arena) {
+	EXIT_IF_NOT(arena != NULL, "Arena is NULL");
+	arena->current = arena->buf;
+}
 
-// =========================================
-// MARK: Functions
-// =========================================
+static inline void* arena_alloc(arena_t* arena, const size_t size) {
+	EXIT_IF_NOT(arena != NULL, "Arena is NULL");
+	EXIT_IF_NOT(size > 0, "Size must be greater than 0");
 
-Arena* arena_new(size_t size);
-Arena* arena_new_custom(size_t size, ArenaAllocFunc alloc_cb, ArenaFreeFunc free_cb, bool expandable);
-void arena_destroy(Arena** arena);
+	const ptrdiff_t remaining = (char*)arena->buf + arena->capacity - (char*)arena->current;
 
-void* arena_global_alloc(size_t size);
-Arena* arena_global_get();
-void arena_global_destroy();
+	if ((size_t)remaining < size) {
+		return NULL;
+	}
 
-void* arena_alloc(Arena* arena, size_t size);
-void* arena_alloc_align(Arena* arena, size_t size, size_t alignment);
-void arena_reset(Arena* arena);
+	void* ptr = arena->current;
+	arena->current = (char*)arena->current + size;
+	return ptr;
+}
 
-#endif //AREA_H
+#endif

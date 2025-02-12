@@ -1,13 +1,11 @@
-//
-// Created by Doge on 09/02/2025.
-//
-
 #ifndef APPSTATE_H
 #define APPSTATE_H
 
 #include <stdbool.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
+
+#include "common/arena.h"
 
 typedef struct {
 	float renderer_zoom;
@@ -23,6 +21,7 @@ typedef struct {
 	Uint64 delta_last_time;
 	float delta;
 	float scroll_speed;
+	arena_t* frame_arena;
 } AppState;
 
 AppState* AppState_new();

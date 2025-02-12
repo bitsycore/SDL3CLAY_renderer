@@ -1,9 +1,4 @@
 // ===============================
-// Common
-#define ENABLE_LEAK_DETECTOR 1
-#include "common/memory_leak.h"
-
-// ===============================
 // SDL
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
@@ -31,6 +26,8 @@
 #include "ui/colors.h"
 #include "ui/screen1.h"
 #include "ui/screen_manager.h"
+#include "common/arena.h"
+#include "common/memory_leak.h"
 
 void HandleClayErrors(Clay_ErrorData errorData) {
 	SDL_Log("%s", errorData.errorText.chars);
@@ -145,6 +142,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
 	AppState* APP = appstate;
+	arena_reset(APP->frame_arena);
 
 	// ==============================
 	// Delta Calculation
@@ -190,6 +188,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
 	AppState* APP = appstate;
 	SDLCLAY_Quit();
+	ml_free(APP->frame_arena);
 	ml_free(APP->clay_memory);
 	ml_free(APP);
 	ml_print_memory_leaks();

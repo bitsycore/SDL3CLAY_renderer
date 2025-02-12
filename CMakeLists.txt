@@ -72,6 +72,8 @@ endif ()
 # MARK: Executable
 # ============================================================================================
 
+add_compile_definitions()
+
 add_executable(SDL3CLAY
         src/main.c
         src/renderer/SDL3CLAY.c
@@ -81,8 +83,6 @@ add_executable(SDL3CLAY
         src/ui/colors.c
         src/appstate.h
         src/appstate.c
-        src/common/arena.c
-        src/common/arena.h
         src/common/debug.c
         src/common/debug.h
         src/common/error_handling.h
@@ -94,6 +94,7 @@ add_executable(SDL3CLAY
         src/ui/screen_manager.h
         src/ui/screen1.c
         src/ui/screen1.h
+        src/common/arena.h
 
 )
 
@@ -107,6 +108,8 @@ target_link_libraries(
 # ============================================================================================
 # MARK: Post Build
 # ============================================================================================
+
+target_compile_definitions(SDL3CLAY PRIVATE $<$<CONFIG:Debug>:ENABLE_LEAK_DETECTOR=1>)
 
 # Copy SDL3 shared libraries to runtime folder
 add_custom_command(TARGET SDL3CLAY POST_BUILD
