@@ -1,6 +1,6 @@
-#ifndef COMPONENTS_H
-#define COMPONENTS_H
+#ifndef SIDEBAR_ITEM_COMPONENTS_H
+#define SIDEBAR_ITEM_COMPONENTS_H
 
 void SidebarItem_component(int i);
 
-#endif //COMPONENTS_H
+#endif //SIDEBAR_ITEM_COMPONENTS_H
