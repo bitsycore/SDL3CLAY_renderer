@@ -92,9 +92,11 @@ add_executable(SDL3CLAY
         src/common/memory_leak.h
         src/ui/screen_manager.c
         src/ui/screen_manager.h
-        src/ui/screen1.c
-        src/ui/screen1.h
+        src/ui/screen_profile.c
+        src/ui/screen_profile.h
         src/common/arena.h
+        src/common/uuid.h
+        src/common/uuid.c
 
 )
 

@@ -1,8 +1,9 @@
 #ifndef SCREEN1_H
 #define SCREEN1_H
 
+#include "screen_manager.h"
 #include "../appstate.h"
 
-void Screen1(AppState * APP);
+Screen ScreenProfile_new();
 
 #endif //SCREEN1_H

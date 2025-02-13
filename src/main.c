@@ -24,10 +24,11 @@
 #include <stdlib.h>
 
 #include "ui/colors.h"
-#include "ui/screen1.h"
+#include "ui/screen_profile.h"
 #include "ui/screen_manager.h"
 #include "common/arena.h"
 #include "common/memory_leak.h"
+#include "ui/components.h"
 
 void HandleClayErrors(Clay_ErrorData errorData) {
 	SDL_Log("%s", errorData.errorText.chars);
@@ -84,7 +85,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 	Clay_SetMeasureTextFunction(SDLCLAY_MeasureText, NULL);
 
-	SetCurrentScreen(Screen1);
+	SetNextScreen(ScreenProfile_new());
 
 	return SDL_APP_CONTINUE;
 }
@@ -140,6 +141,27 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 	return SDL_APP_CONTINUE;
 }
 
+Clay_RenderCommandArray ProcessUi(AppState * APP) {
+	// ========================================
+	// Clay Update States
+	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
+	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
+	Clay_UpdateScrollContainers(true, (Clay_Vector2){ APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed }, APP->delta);
+	Clay_BeginLayout();
+
+	ButtonDebugComponent();
+
+	// ========================================
+	// Screen Manager
+	InitScreen(APP);
+	UpdateScreen(APP);
+	DestroyScreen(APP, false);
+
+
+	return Clay_EndLayout();
+}
+
+
 SDL_AppResult SDL_AppIterate(void* appstate) {
 	AppState* APP = appstate;
 	arena_reset(APP->frame_arena);
@@ -170,7 +192,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
 	// ===============================
 	// CLAY UI RENDER
-	Clay_RenderCommandArray commands = ProcessCurrentScreen(APP);
+	Clay_RenderCommandArray commands = ProcessUi(APP);
 	SDLCLAY_RenderCommands(APP->renderer, &commands);
 
 	// ===============================
@@ -187,6 +209,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
 	AppState* APP = appstate;
+	DestroyScreen(APP, true);
 	SDLCLAY_Quit();
 	ml_free(APP->frame_arena);
 	ml_free(APP->clay_memory);

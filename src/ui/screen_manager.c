@@ -5,33 +5,44 @@
 #include "screen_manager.h"
 
 #include "../appstate.h"
-#include "colors.h"
 #include "components.h"
 
-static ScreenFun CURRENT_SCREEN = NULL;
+Screen CURRENT_SCREEN = {0}, NEXT_SCREEN = {0};
+bool NEXT_SCREEN_READY = false;
 
-void SetCurrentScreen(const ScreenFun screen) {
-	CURRENT_SCREEN = screen;
+void SetNextScreen(const Screen screen) {
+	NEXT_SCREEN = screen;
+	NEXT_SCREEN_READY = true;
 }
 
-ScreenFun GetCurrentScreen() {
-	return CURRENT_SCREEN;
+Screen* GetCurrentScreen() {
+	return &CURRENT_SCREEN;
 }
 
-Clay_RenderCommandArray ProcessCurrentScreen(AppState * APP) {
-	// ========================================
-	// Clay Update States
-	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
-	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
-	Clay_UpdateScrollContainers(true, (Clay_Vector2){ APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed }, APP->delta);
+void InitScreen(AppState* APP) {
+	if (!CURRENT_SCREEN.init_done) {
+		if (CURRENT_SCREEN.on_init) {
+			void *ptr = NULL;
+			CURRENT_SCREEN.on_init(APP, &ptr);
+			CURRENT_SCREEN.state = ptr;
+		}
 
-	Clay_BeginLayout();
-
-	ButtonDebugComponent();
-
-	if (CURRENT_SCREEN) {
-		CURRENT_SCREEN(APP);
+		CURRENT_SCREEN.init_done = true;
 	}
+}
 
-	return Clay_EndLayout();
+void UpdateScreen(AppState *APP) {
+	if (CURRENT_SCREEN.on_update) {
+		CURRENT_SCREEN.on_update(APP, CURRENT_SCREEN.state);
+	}
+}
+
+void DestroyScreen(AppState *APP, const bool force) {
+	if (NEXT_SCREEN_READY || force) {
+		if (CURRENT_SCREEN.on_destroy) {
+			CURRENT_SCREEN.on_destroy(APP, CURRENT_SCREEN.state);
+		}
+		CURRENT_SCREEN = NEXT_SCREEN;
+		NEXT_SCREEN_READY = false;
+	}
 }
