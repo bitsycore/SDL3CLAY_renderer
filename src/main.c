@@ -63,6 +63,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	// Init Test Texture
 	APP->img_profile = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
 	APP->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
+	APP->img_bg = IMG_LoadTexture(APP->renderer, "assets/bg.jpg");
 
 	// ===============================
 	// Initialize Clay
@@ -162,6 +163,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 	SDL_SetRenderScale(APP->renderer, APP->renderer_zoom, APP->renderer_zoom);
 	SDL_SetRenderDrawColor(APP->renderer, COLOR_CLAY_EXPLODE(COLOR_DARK));
 	SDL_RenderClear(APP->renderer);
+	SDL_RenderTexture(APP->renderer, APP->img_bg, NULL, NULL);
 
 	// ========================================
 	// Clay Update States

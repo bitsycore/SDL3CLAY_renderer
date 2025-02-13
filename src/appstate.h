@@ -22,6 +22,7 @@ typedef struct {
 	float delta;
 	float scroll_speed;
 	arena_t* frame_arena;
+	SDL_Texture * img_bg;
 } AppState;
 
 AppState* AppState_new();
