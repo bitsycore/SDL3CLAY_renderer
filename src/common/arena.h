@@ -2,6 +2,7 @@
 #define ARENA2_H
 
 #include <stdlib.h>
+#include <stddef.h>
 
 #include "error_handling.h"
 

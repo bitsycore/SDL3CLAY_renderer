@@ -150,7 +150,7 @@ void imp_ml_print_memory_leaks() {
 	printf("\n--------------------- [MEMORY LEAK DETECTED] ---------------------\n\n");
 
 	while (current != NULL) {
-		char size_str[11];
+		char size_str[20];
 		static const int GB = 1024 * 1024 * 1024;
 		static const int MB = 1024 * 1024;
 		static const int KB = 1024;
