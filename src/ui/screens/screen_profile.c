@@ -4,19 +4,20 @@
 
 #include "screen_profile.h"
 
-#include "colors.h"
-#include "components.h"
-#include "screen_manager.h"
-#include "../../vendor/clay.h"
-#include "../common/memory_leak.h"
+#include <clay.h>
+#include "../../common/memory_leak.h"
+#include "../colors.h"
+#include "../screen_manager.h"
+#include "../components/component_profile.h"
+#include "../components/component_sidebar_item.h"
 
-void ScreenProfile_init(AppState *APP, void **screen_state) {
-    const size_t arena_size = arena_required_size(1024*1024);
-    *screen_state = arena_init(ml_malloc(arena_size), arena_size);
+static void ScreenProfile_init(AppState *APP, void **screen_state) {
+    const size_t arena_size = Arena_requiredSize(1024*1024);
+    *screen_state = Arena_init(ml_malloc(arena_size), arena_size);
 }
 
-void ScreenProfile_update(AppState *APP, void *screen_state) {
-    arena_reset(screen_state);
+static void ScreenProfile_update(AppState *APP, void *screen_state) {
+    Arena_reset(screen_state);
 
     // ========================================
     // Clay Layout
@@ -39,14 +40,14 @@ void ScreenProfile_update(AppState *APP, void *screen_state) {
             .padding = CLAY_PADDING_ALL(16),
             .childGap = 16,
         },
-        .backgroundColor = AlphaOver(COLOR_DARK_BLUE, 0.75f),
+        .backgroundColor = Color_alphaOver(COLOR_DARK_BLUE, 0.75f),
         .cornerRadius = CLAY_CORNER_RADIUS(8),
         .scroll = {
             .vertical = true
         },
         .border = {
             .width = CLAY_BORDER_OUTSIDE(2),
-            .color = AlphaOver(COLOR_BLACK_NICE, 0.5f)
+            .color = Color_alphaOver(COLOR_BLACK_NICE, 0.5f)
         }
     };
 
@@ -65,18 +66,18 @@ void ScreenProfile_update(AppState *APP, void *screen_state) {
 
     CLAY(OuterContainer) {
         CLAY(SideBar) {
-            ProfileComponent(APP);
+            Profile_component(APP);
 
             for (int i = 0; i < 30; i++) {
-                SidebarItemComponent(i % 5 * 16);
+                SidebarItem_component(i % 5 * 16);
             }
 
-            CLAY(MainContent) { SidebarItemComponent(32); }
+            CLAY(MainContent) { SidebarItem_component(32); }
         }
     }
 }
 
-void ScreenProfile_destroy(AppState *APP, void *screen_state) {
+static void ScreenProfile_destroy(AppState *APP, void *screen_state) {
     ml_free(screen_state);
 }
 
@@ -89,5 +90,7 @@ Screen ScreenProfile_new() {
         .on_update = ScreenProfile_update,
         .on_destroy = ScreenProfile_destroy,
         .init_done = false,
+        .destroy_done = false,
+        .update_rate_ms = SCREEN_FPS_TO_MS(10)
     };
 }

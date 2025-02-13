@@ -2,8 +2,10 @@
 #define SCREEN_H
 
 #include "../appstate.h"
-#include "../../vendor/clay.h"
+#include <clay.h>
 #include "../common/uuid.h"
+
+#define SCREEN_FPS_TO_MS(FPS) 1000.0f/(FPS)
 
 typedef enum ScreenList {
     SCREEN_LIST_PROFILE = 0,
@@ -18,16 +20,20 @@ typedef struct Screen {
     int type_id;
     void* state;
     bool init_done;
+    bool destroy_done;
     ScreenInitFun on_init;
     ScreenUpdateFun on_update;
     ScreenDestroyFun on_destroy;
+    float update_rate_ms;
+    uint64_t last_update_time;
 } Screen;
 
-void SetNextScreen(Screen screen);
-Screen* GetCurrentScreen();
+void ScreenManager_setNextScreen(Screen screen);
+Screen* ScreenManager_getCurrentScreen();
 
-void InitScreen(AppState * APP);
-void UpdateScreen(AppState * APP);
-void DestroyScreen(AppState* APP, bool force);
+void ScreenManager_runScreenInit(AppState * APP);
+bool ScreenManager_isScreenReadyToUpdate();
+void ScreenManager_runScreenUpdate(AppState * APP);
+void ScreenManager_runScreenDestroy(AppState* APP, bool is_app_quit);
 
 #endif //SCREEN_H

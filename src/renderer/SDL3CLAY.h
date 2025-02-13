@@ -1,7 +1,7 @@
 #ifndef CLAY_RENDERER_SDL3_H
 #define CLAY_RENDERER_SDL3_H
 
-#include "../../vendor/clay.h"
+#include <clay.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -35,8 +35,10 @@ void SDLCLAY_Quit();
 // MARK: Fonts
 // ===================================================================================
 
-// Base capacity of a node of the holder before requiring
-// an extra node in the chained list
+/**
+ * Base capacity of a node of the holder before requiring
+ * an extra node in the chained list
+ */
 #define SDLCLAY_FONT_HOLDER_CAPACITY 32
 #define SDLCLAY_FONT_MAX_SIZE 256
 

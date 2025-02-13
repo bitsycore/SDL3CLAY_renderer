@@ -9,7 +9,7 @@
 // ===============================
 // CLAY
 #define CLAY_IMPLEMENTATION
-#include "../vendor/clay.h"
+#include <clay.h>
 
 // ===============================
 // SDL3CLAY
@@ -25,11 +25,11 @@
 #include <stdlib.h>
 
 #include "ui/colors.h"
-#include "ui/screen_profile.h"
 #include "ui/screen_manager.h"
 #include "common/arena.h"
 #include "common/memory_leak.h"
-#include "ui/components.h"
+#include "ui/screens/screen_profile.h"
+#include "ui/components/component_debug_button.h"
 
 void HandleClayErrors(Clay_ErrorData errorData) {
 	SDL_Log("%s", errorData.errorText.chars);
@@ -87,7 +87,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 	Clay_SetMeasureTextFunction(SDLCLAY_MeasureText, NULL);
 
-	SetNextScreen(ScreenProfile_new());
+	ScreenManager_setNextScreen(ScreenProfile_new());
 
 	return SDL_APP_CONTINUE;
 }
@@ -149,56 +149,60 @@ Clay_RenderCommandArray ProcessUi(AppState * APP) {
 
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
-	AppState* APP = appstate;
-	arena_reset(APP->frame_arena);
+	if (ScreenManager_isScreenReadyToUpdate()) {
+		AppState* APP = appstate;
+		Arena_reset(APP->frame_arena);
 
-	// ==============================
-	// Delta Calculation
-	const Uint64 currentTime = SDL_GetTicks();
-	APP->delta = (float) (currentTime - APP->delta_last_time) / 1000.0f;
-	APP->delta_last_time = currentTime;
+		// ==============================
+		// Delta Calculation
+		const Uint64 currentTime = SDL_GetTicks();
+		APP->delta = (float) (currentTime - APP->delta_last_time) / 1000.0f;
+		APP->delta_last_time = currentTime;
 
-	// ===============================
-	// SDL Update
-	SDL_SetRenderScale(APP->renderer, APP->renderer_zoom, APP->renderer_zoom);
-	SDL_SetRenderDrawColor(APP->renderer, COLOR_CLAY_EXPLODE(COLOR_DARK));
-	SDL_RenderClear(APP->renderer);
-	SDL_RenderTexture(APP->renderer, APP->img_bg, NULL, NULL);
+		// ===============================
+		// SDL Update
+		SDL_SetRenderScale(APP->renderer, APP->renderer_zoom, APP->renderer_zoom);
+		SDL_SetRenderDrawColor(APP->renderer, COLOR_CLAY_EXPLODE(COLOR_DARK));
+		SDL_RenderClear(APP->renderer);
+		SDL_RenderTexture(APP->renderer, APP->img_bg, NULL, NULL);
 
-	// ========================================
-	// Clay Update States
-	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
-	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
-	Clay_UpdateScrollContainers(true, (Clay_Vector2){ APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed }, APP->delta);
-	Clay_BeginLayout();
-	ButtonDebugComponent();
+		// ========================================
+		// Clay Update
+		Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
+		Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
+		Clay_UpdateScrollContainers(true, (Clay_Vector2){
+			                            APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed
+		                            }, APP->delta);
+		Clay_BeginLayout();
+		DebugButton_component();
 
-	// ========================================
-	// Screen Management
-	InitScreen(APP);
-	UpdateScreen(APP);
-	DestroyScreen(APP, false);
+		// ========================================
+		// Screen Management
 
-	// ========================================
-	// Clay Render
-	Clay_RenderCommandArray commands = Clay_EndLayout();
-	SDLCLAY_RenderCommands(APP->renderer, &commands);
+		ScreenManager_runScreenInit(APP);
+		ScreenManager_runScreenUpdate(APP);
+		ScreenManager_runScreenDestroy(APP, false);
 
-	// ===============================
-	// SDL FLIP BUFFER
-	SDL_RenderPresent(APP->renderer);
+		// ========================================
+		// Clay Render
+		Clay_RenderCommandArray commands = Clay_EndLayout();
+		SDLCLAY_RenderCommands(APP->renderer, &commands);
 
-	// ===============================
-	// Reset Mouse wheel
-	APP->mouseWheelX = 0;
-	APP->mouseWheelY = 0;
+		// ===============================
+		// SDL FLIP BUFFER
+		SDL_RenderPresent(APP->renderer);
 
+		// ===============================
+		// Reset Mouse wheel
+		APP->mouseWheelX = 0;
+		APP->mouseWheelY = 0;
+	}
 	return SDL_APP_CONTINUE;
 }
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
 	AppState* APP = appstate;
-	DestroyScreen(APP, true);
+	ScreenManager_runScreenDestroy(APP, true);
 	SDLCLAY_Quit();
 	ml_free(APP->frame_arena);
 	ml_free(APP->clay_memory);

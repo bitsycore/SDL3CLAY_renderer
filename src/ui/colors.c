@@ -1,6 +1,6 @@
 #include "colors.h"
 
-void RGBtoHSL(const float r, const float g, const float b, float* h, float* s, float* l) {
+void Color_RGBtoHSL(const float r, const float g, const float b, float* h, float* s, float* l) {
 	const float max = r > (g > b ? g : b) ? r : g > b ? g : b;
 	const float min = r < (g < b ? g : b) ? r : g < b ? g : b;
 
@@ -33,7 +33,7 @@ static float HueToRGB(const float p, const float q, float t) {
 	return p;
 }
 
-void HSLtoRGB(const float h, const float s, const float l, float* r, float* g, float* b) {
+void Color_HSLtoRGB(const float h, const float s, const float l, float* r, float* g, float* b) {
 	if (s == 0.0f) {
 		*r = *g = *b = l;
 		return;

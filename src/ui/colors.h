@@ -2,7 +2,7 @@
 #define COLORS_H
 
 #include <SDL3/SDL_pixels.h>
-#include "../../vendor/clay.h"
+#include <clay.h>
 
 #define COLOR_BLACK			 (Clay_Color){ 0, 0, 0, 255 }
 #define COLOR_WHITE			 (Clay_Color){ 255, 255, 255, 255 }
@@ -20,53 +20,53 @@
 
 #define COLOR_CLAY_EXPLODE(color) color.r, color.g, color.b, color.a
 
-void RGBtoHSL(float r, float g, float b, float* h, float* s, float* l);
-void HSLtoRGB(float h, float s, float l, float* r, float* g, float* b);
+void Color_RGBtoHSL(float r, float g, float b, float* h, float* s, float* l);
+void Color_HSLtoRGB(float h, float s, float l, float* r, float* g, float* b);
 
-static inline Clay_Color AlphaOver(const Clay_Color in, const float alpha) {
+static inline Clay_Color Color_alphaOver(const Clay_Color in, const float alpha) {
 	return (Clay_Color) {in.r, in.g, in.b, alpha * 255};
 }
 
-static inline Clay_Color HueOver(const Clay_Color in, const float hueOffset) {
+static inline Clay_Color Color_hueOver(const Clay_Color in, const float hueOffset) {
 	float h, s, l;
-	RGBtoHSL(in.r, in.g, in.b, &h, &s, &l);
+	Color_RGBtoHSL(in.r, in.g, in.b, &h, &s, &l);
 
 	h += hueOffset; // Adjust hue
 	if (h > 1.0f) h -= 1.0f;
 	if (h < 0.0f) h += 1.0f;
 
 	Clay_Color out = in; // Keep alpha unchanged
-	HSLtoRGB(h, s, l, &out.r, &out.g, &out.b);
+	Color_HSLtoRGB(h, s, l, &out.r, &out.g, &out.b);
 	return out;
 }
 
-static inline Clay_Color SatOver(const Clay_Color in, const float satOffset) {
+static inline Clay_Color Color_satOver(const Clay_Color in, const float satOffset) {
 	float h, s, l;
-	RGBtoHSL(in.r, in.g, in.b, &h, &s, &l);
+	Color_RGBtoHSL(in.r, in.g, in.b, &h, &s, &l);
 
 	s += satOffset; // Adjust saturation
 	if (s > 1.0f) s = 1.0f;
 	if (s < 0.0f) s = 0.0f;
 
 	Clay_Color out = in; // Keep alpha unchanged
-	HSLtoRGB(h, s, l, &out.r, &out.g, &out.b);
+	Color_HSLtoRGB(h, s, l, &out.r, &out.g, &out.b);
 	return out;
 }
 
-static inline Clay_Color LightOver(const Clay_Color in, const float lightOffset) {
+static inline Clay_Color Color_lightOver(const Clay_Color in, const float lightOffset) {
 	float h, s, l;
-	RGBtoHSL(in.r, in.g, in.b, &h, &s, &l);
+	Color_RGBtoHSL(in.r, in.g, in.b, &h, &s, &l);
 
 	l += lightOffset; // Adjust lightness
 	if (l > 1.0f) l = 1.0f;
 	if (l < 0.0f) l = 0.0f;
 
 	Clay_Color out = in; // Keep alpha unchanged
-	HSLtoRGB(h, s, l, &out.r, &out.g, &out.b);
+	Color_HSLtoRGB(h, s, l, &out.r, &out.g, &out.b);
 	return out;
 }
 
-static inline Clay_Color Darken(const Clay_Color in, const float amount) {
+static inline Clay_Color Color_darken(const Clay_Color in, const float amount) {
 	return (Clay_Color) {
 		.r = in.r * (1.0f - amount),
 		.g = in.g * (1.0f - amount),
@@ -75,7 +75,7 @@ static inline Clay_Color Darken(const Clay_Color in, const float amount) {
 	};
 }
 
-static inline Clay_Color Lighten(const Clay_Color in, const float amount) {
+static inline Clay_Color Color_lighten(const Clay_Color in, const float amount) {
 	return (Clay_Color) {
 		.r = in.r + (255 - in.r) * amount,
 		.g = in.g + (255 - in.g) * amount,
@@ -84,7 +84,7 @@ static inline Clay_Color Lighten(const Clay_Color in, const float amount) {
 	};
 }
 
-static inline Clay_Color LerpColor(const Clay_Color a, const Clay_Color b, const float t) {
+static inline Clay_Color Color_lerpColor(const Clay_Color a, const Clay_Color b, const float t) {
 	return (Clay_Color) {
 		.r = (a.r + (b.r - a.r) * t),
 		.g = (a.g + (b.g - a.g) * t),
@@ -93,11 +93,11 @@ static inline Clay_Color LerpColor(const Clay_Color a, const Clay_Color b, const
 	};
 }
 
-static inline SDL_Color ClayToSdlColor(const Clay_Color color) {
+static inline SDL_Color Color_clayToSdl(const Clay_Color color) {
 	return (SDL_Color) { (int) color.r, (int) color.g, (int) color.b, (int) color.a};
 }
 
-static inline Clay_Color SdlToClayColor(const SDL_Color color) {
+static inline Clay_Color Color_sdlToClay(const SDL_Color color) {
 	return (Clay_Color) {color.r, color.g, color.b, color.a};
 }
 
