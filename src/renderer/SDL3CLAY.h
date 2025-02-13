@@ -35,6 +35,8 @@ void SDLCLAY_Quit();
 // MARK: Fonts
 // ===================================================================================
 
+// Base capacity of a node of the holder before requiring
+// an extra node in the chained list
 #define SDLCLAY_FONT_HOLDER_CAPACITY 32
 #define SDLCLAY_FONT_MAX_SIZE 256
 

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "error_handling.h"
+
 typedef struct AllocationInfo {
 	void* address;
 	size_t size;
@@ -17,7 +19,7 @@ static AllocationInfo* ALLOCATION_LIST = NULL;
 static void add_allocation(void* address, const size_t size, const char* file, const int line) {
 	AllocationInfo* new_allocation = malloc(sizeof(AllocationInfo));
 	if (new_allocation == NULL) {
-		fputs("Error: Failed to allocate memory for allocation tracking!\n", stderr);
+		WARN("Error: Failed to allocate memory for allocation tracking!\n");
 		return;
 	}
 	new_allocation->address = address;
@@ -74,7 +76,7 @@ void* imp_ml_realloc(void* (*custom_realloc)(void*, size_t), void* ptr, const si
 	void* new_ptr = custom_realloc(ptr, size);
 	if (new_ptr != NULL) {
 		if (ptr != NULL) {
-			remove_allocation(ptr); // Remove old allocation information
+			remove_allocation(ptr);
 		}
 
 		add_allocation(new_ptr, size, file, line);
@@ -146,7 +148,8 @@ void imp_ml_print_memory_leaks() {
 	size_t number_leaked_block = 0;
 
 	printf("\n--------------------- [MEMORY LEAK DETECTED] ---------------------\n\n");
-	while (current != NULL) {;
+
+	while (current != NULL) {
 		char size_str[11];
 		static const int GB = 1024 * 1024 * 1024;
 		static const int MB = 1024 * 1024;
@@ -161,12 +164,18 @@ void imp_ml_print_memory_leaks() {
 			snprintf(size_str, sizeof(size_str), "%zu Bytes", current->size);
 		}
 
-		printf("[%zu]    0x%p    %-11s    %s:%d\n",
-			   number_leaked_block, current->address, size_str, current->file, current->line);
+		printf(
+			"[%zu]    0x%p    %-11s    %s:%d\n",
+			number_leaked_block,
+			current->address, size_str,
+			current->file, current->line
+		);
+
 		total_leaked_memory += current->size;
 		current = current->next;
 		number_leaked_block++;
 	}
+
 	printf(
 		"\n"
 		"------------------------------------------------------------------\n"
