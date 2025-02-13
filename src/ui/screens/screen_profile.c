@@ -91,6 +91,6 @@ Screen ScreenProfile_new() {
         .on_destroy = ScreenProfile_destroy,
         .init_done = false,
         .destroy_done = false,
-        .update_rate_ms = SCREEN_FPS_TO_MS(10)
+        .update_rate_ms = SCREEN_FPS_TO_MS(60)
     };
 }

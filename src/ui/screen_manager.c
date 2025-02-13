@@ -35,7 +35,7 @@ bool ScreenManager_isScreenReadyToUpdate() {
 	const uint64_t current_time = SDL_GetTicks();
 	const uint64_t elapsed_time = current_time - CURRENT_SCREEN.last_update_time;
 
-	if (elapsed_time >= CURRENT_SCREEN.update_rate_ms) {
+	if ((float) elapsed_time >= CURRENT_SCREEN.update_rate_ms) {
 		CURRENT_SCREEN.last_update_time = current_time;
 		return true;
 	}
