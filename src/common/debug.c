@@ -61,12 +61,10 @@ char* print_call_stack() {
 // =====================================================================================================================
 
 char* print_call_stack() {
-	const char msg[] = "  Unavailable on MinGW\n";
+	const char msg[] = "\n";
 	char* heap_msg = malloc(strlen(msg) + 1);
-	if (!heap_msg) {
-		return NULL;
-	}
-	return strcpy(heap_msg, msg);
+	strcpy(heap_msg, msg);
+	return heap_msg;
 }
 
 // =====================================================================================================================

@@ -20,7 +20,6 @@ typedef struct Screen {
     bool init_done;
     ScreenInitFun on_init;
     ScreenUpdateFun on_update;
-    bool destroy_done;
     ScreenDestroyFun on_destroy;
 } Screen;
 

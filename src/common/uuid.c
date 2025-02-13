@@ -1,5 +1,6 @@
 #include "uuid.h"
 
+#include <ctype.h>
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +8,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "error_handling.h"
+
 static bool RNG_INIT = false;
-static uint32_t seed;
+static uint32_t SEED;
+static bool D = false;
 
 // Xorshift PRNG
 static uint32_t xorshift32(uint32_t* state) {
@@ -22,10 +26,14 @@ static uint32_t xorshift32(uint32_t* state) {
 
 static void initRandom() {
     if (!RNG_INIT) {
-        seed = (uint32_t)time(NULL);
-        seed ^= (uint32_t)clock();
+        SEED = (uint32_t)time(NULL);
+        SEED ^= (uint32_t)clock();
         RNG_INIT = true;
     }
+}
+
+void UUID_setDebug(const bool value) {
+    D = value;
 }
 
 UUID UUID_new() {
@@ -33,10 +41,10 @@ UUID UUID_new() {
 
     initRandom();
 
-    const uint32_t r1 = xorshift32(&seed);
-    const uint32_t r2 = xorshift32(&seed);
-    const uint32_t r3 = xorshift32(&seed);
-    const uint32_t r4 = xorshift32(&seed);
+    const uint32_t r1 = xorshift32(&SEED);
+    const uint32_t r2 = xorshift32(&SEED);
+    const uint32_t r3 = xorshift32(&SEED);
+    const uint32_t r4 = xorshift32(&SEED);
 
     memcpy(uuid.data, &r1, 4);
     memcpy(uuid.data + 4, &r2, 4);
@@ -47,6 +55,10 @@ UUID UUID_new() {
     uuid.data[8] = uuid.data[8] & 0x3f | 0x80;
 
     return uuid;
+}
+
+bool UUID_equal(const UUID uuid1, const UUID uuid2) {
+    return memcmp(uuid1.data, uuid2.data, UUID_DATA_LENGTH) == 0;
 }
 
 UUID_Result UUID_toString(const UUID uuid, char *buffer) {
@@ -68,49 +80,41 @@ UUID_Result UUID_toString(const UUID uuid, char *buffer) {
     return UUID_SUCCESS;
 }
 
-
-UUID_Result UUID_fromString(const char *buffer, UUID *uuid) {
-    if (buffer == NULL) {
+UUID_Result UUID_fromString(const char *string_uuid, UUID *out_uuid) {
+    if (string_uuid == NULL) {
+        if (D)
+            WARN("Parameter \"string_uuid\" is NULL");
         return UUID_INPUT_BUFFER_NULL;
     }
 
-    if (uuid == NULL) {
+    if (out_uuid == NULL) {
+        if (D)
+            WARN("Parameter \"uuid\" is NULL");
         return UUID_INPUT_UUID_NULL;
     }
 
-    const char *pos = buffer;
     char *end_ptr;
+    int data_index = 0;
 
-    for (int i = 0; i < UUID_LENGTH; ++i) {
-        if (i == 4 || i == 6 || i == 8 || i == 10) {
-            if (*pos != '-') {
-                fprintf(stderr, "Invalid UUID format: Missing dash at position %d\n", i);
+    for (int i = 0; i < UUID_STRING_LENGTH - 1;) {
+        if (!isxdigit(string_uuid[i]) && (i != 8 && i != 13 && i != 18 && i != 23)) {
+            if (D)
+                WARN_FORMAT("Invalid hex character: %c", string_uuid[i]);
+            return UUID_INVALID_STRING_FORMAT;
+        }
+
+        if (string_uuid[i] != '-') {
+            const char hex_str[3] = { string_uuid[i], string_uuid[i + 1], '\0' };
+            out_uuid->data[data_index] = strtoul(hex_str, &end_ptr, 16);
+            if (*end_ptr != '\0') {
+                WARN_FORMAT("Conversion error for string %s", string_uuid);
                 return UUID_INVALID_STRING_FORMAT;
             }
-            pos++;
+            data_index++;
+            i += 2;
+        } else {
+            i++;
         }
-
-        errno = 0;
-        const unsigned long value = strtoul(pos, &end_ptr, 16);
-
-        if (errno != 0 || end_ptr != pos + 2) {
-            fprintf(stderr, "Invalid UUID format: Invalid hex characters at position %d\n", i);
-            return UUID_INVALID_STRING_FORMAT;
-        }
-
-
-        if (value > 255) {
-            fprintf(stderr, "Invalid UUID format: Hex value out of range at position %d\n", i);
-            return UUID_INVALID_STRING_FORMAT;
-        }
-
-        uuid->data[i] = (unsigned char)value;
-        pos = end_ptr;
-    }
-
-    if (*pos != '\0') {
-        fprintf(stderr, "Invalid UUID format: Extra characters at the end\n");
-        return UUID_INVALID_STRING_FORMAT;
     }
 
     return UUID_SUCCESS;

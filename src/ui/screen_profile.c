@@ -89,6 +89,5 @@ Screen ScreenProfile_new() {
         .on_update = ScreenProfile_update,
         .on_destroy = ScreenProfile_destroy,
         .init_done = false,
-        .destroy_done = false
     };
 }

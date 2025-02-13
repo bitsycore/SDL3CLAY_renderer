@@ -21,6 +21,7 @@
 
 // ===============================
 // STD
+#include <assert.h>
 #include <stdlib.h>
 
 #include "ui/colors.h"
@@ -142,23 +143,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 }
 
 Clay_RenderCommandArray ProcessUi(AppState * APP) {
-	// ========================================
-	// Clay Update States
-	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
-	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
-	Clay_UpdateScrollContainers(true, (Clay_Vector2){ APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed }, APP->delta);
-	Clay_BeginLayout();
 
-	ButtonDebugComponent();
-
-	// ========================================
-	// Screen Manager
-	InitScreen(APP);
-	UpdateScreen(APP);
-	DestroyScreen(APP, false);
-
-
-	return Clay_EndLayout();
 }
 
 
@@ -173,30 +158,32 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 	APP->delta_last_time = currentTime;
 
 	// ===============================
-	// SCALE
-	const float scale = APP->renderer_zoom;
-	SDL_SetRenderScale(APP->renderer, scale, scale);
-
-	// ===============================
-	// CLEAR
+	// SDL Update
+	SDL_SetRenderScale(APP->renderer, APP->renderer_zoom, APP->renderer_zoom);
 	SDL_SetRenderDrawColor(APP->renderer, COLOR_CLAY_EXPLODE(COLOR_DARK));
 	SDL_RenderClear(APP->renderer);
 
-	// ===============================
-	// CENTERED DEBUG TEST TEXT
-	const char* message = "Hello World!";
-	const float x = ((float) APP->window_width / scale - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE * SDL_strlen(message)) / 2;
-	const float y = ((float) APP->window_height / scale - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE) / 2;
-	SDL_SetRenderDrawColor(APP->renderer, 255, 255, 255, 255);
-	SDL_RenderDebugText(APP->renderer, x, y, message);
+	// ========================================
+	// Clay Update States
+	Clay_SetLayoutDimensions((Clay_Dimensions){(float) APP->window_width, (float) APP->window_height});
+	Clay_SetPointerState((Clay_Vector2){APP->mousePositionX, APP->mousePositionY}, APP->isMouseDown);
+	Clay_UpdateScrollContainers(true, (Clay_Vector2){ APP->mouseWheelX * APP->scroll_speed, APP->mouseWheelY * APP->scroll_speed }, APP->delta);
+	Clay_BeginLayout();
+	ButtonDebugComponent();
 
-	// ===============================
-	// CLAY UI RENDER
-	Clay_RenderCommandArray commands = ProcessUi(APP);
+	// ========================================
+	// Screen Management
+	InitScreen(APP);
+	UpdateScreen(APP);
+	DestroyScreen(APP, false);
+
+	// ========================================
+	// Clay Render
+	Clay_RenderCommandArray commands = Clay_EndLayout();
 	SDLCLAY_RenderCommands(APP->renderer, &commands);
 
 	// ===============================
-	// FLIP
+	// SDL FLIP BUFFER
 	SDL_RenderPresent(APP->renderer);
 
 	// ===============================

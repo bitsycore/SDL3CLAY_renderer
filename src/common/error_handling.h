@@ -12,6 +12,12 @@
 // MARK: Warnings
 // ================================
 
+#define WARN_FORMAT(msg, ...) do { \
+    char* callstack__ = print_call_stack();\
+    fprintf(stderr, "\n---- [WARNING] ----\nInfo: " msg "\nFile: %s:%d\nFunction: %s\nCallstack:\n%s-------------------\n", __VA_ARGS__, __FILE__, __LINE__, __func__, callstack__); \
+    free(callstack__); \
+} while (0)
+
 #define WARN(msg) do { \
     char* callstack__ = print_call_stack();\
     fprintf(stderr, "\n---- [WARNING] ----\nInfo: %s\nFile: %s:%d\nFunction: %s\nCallstack:\n%s-------------------\n", msg, __FILE__, __LINE__, __func__, callstack__); \
