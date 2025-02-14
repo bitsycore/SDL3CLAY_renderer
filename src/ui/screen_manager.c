@@ -27,22 +27,6 @@ void ScreenManager_runScreenInit(AppState* APP) {
 	}
 }
 
-bool ScreenManager_isScreenReadyToUpdate() {
-	if (CURRENT_SCREEN.update_rate_ms <= 0) {
-		return true;
-	}
-
-	const uint64_t current_time = SDL_GetTicks();
-	const uint64_t elapsed_time = current_time - CURRENT_SCREEN.last_update_time;
-
-	if ((float) elapsed_time >= CURRENT_SCREEN.update_rate_ms) {
-		CURRENT_SCREEN.last_update_time = current_time;
-		return true;
-	}
-
-	return false;
-}
-
 void ScreenManager_runScreenUpdate(AppState *APP) {
 	if (CURRENT_SCREEN.on_update) {
 		CURRENT_SCREEN.on_update(APP, CURRENT_SCREEN.state);
@@ -57,4 +41,20 @@ void ScreenManager_runScreenDestroy(AppState *APP, const bool is_app_quit) {
 		CURRENT_SCREEN = NEXT_SCREEN;
 		NEXT_SCREEN_READY = false;
 	}
+}
+
+bool ScreenManager_isScreenReadyToUpdate() {
+	if (CURRENT_SCREEN.update_rate_ms <= 0) {
+		return true;
+	}
+
+	const uint64_t current_time = SDL_GetTicks();
+	const uint64_t elapsed_time = current_time - CURRENT_SCREEN.last_update_time;
+
+	if ((float) elapsed_time >= CURRENT_SCREEN.update_rate_ms) {
+		CURRENT_SCREEN.last_update_time = current_time;
+		return true;
+	}
+
+	return false;
 }

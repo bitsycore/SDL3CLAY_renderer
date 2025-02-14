@@ -32,8 +32,9 @@ void ScreenManager_setNextScreen(Screen screen);
 Screen* ScreenManager_getCurrentScreen();
 
 void ScreenManager_runScreenInit(AppState * APP);
-bool ScreenManager_isScreenReadyToUpdate();
 void ScreenManager_runScreenUpdate(AppState * APP);
 void ScreenManager_runScreenDestroy(AppState* APP, bool is_app_quit);
+
+bool ScreenManager_isScreenReadyToUpdate();
 
 #endif //SCREEN_H

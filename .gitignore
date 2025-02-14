@@ -1,3 +1,5 @@
-/vendor/SDL3_ttf/
 /cmake-build-*/
 /.idea/
+/vendor/SDL3_image/
+/vendor/SDL3_ttf/
+/vendor/SDL3/
