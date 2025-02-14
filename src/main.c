@@ -24,10 +24,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "ui/colors.h"
-#include "ui/screen_manager.h"
 #include "common/arena.h"
 #include "common/memory_leak.h"
+#include "ui/colors.h"
+#include "ui/screen_manager.h"
 #include "ui/screens/screen_profile.h"
 #include "ui/components/component_debug_button.h"
 
@@ -84,9 +84,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	// Initialize SDL3CLAY
 	SDLCLAY_SetAllocator(ml_callback_malloc, ml_callback_free);
 	SDLCLAY_AddFont("assets/Roboto-Regular.ttf", 16);
-
 	Clay_SetMeasureTextFunction(SDLCLAY_MeasureText, NULL);
 
+	// ==============================
+	// Set Screen to Load
 	ScreenManager_setNextScreen(ScreenProfile_new());
 
 	return SDL_APP_CONTINUE;
@@ -142,11 +143,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 
 	return SDL_APP_CONTINUE;
 }
-
-Clay_RenderCommandArray ProcessUi(AppState * APP) {
-
-}
-
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
 	if (ScreenManager_isScreenReadyToUpdate()) {
@@ -204,7 +200,6 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
 	AppState* APP = appstate;
 	ScreenManager_runScreenDestroy(APP, true);
 	SDLCLAY_Quit();
-	ml_free(APP->frame_arena);
 	ml_free(APP->clay_memory);
 	ml_free(APP);
 	ml_print_memory_leaks();

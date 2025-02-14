@@ -14,11 +14,6 @@ AppState* AppState_new() {
 	APP->window_width = 1280;
 	APP->delta_last_time = SDL_GetTicks();
 
-	const size_t arena_size = Arena_requiredSize(sizeof(char) * 1024 * 1024);
-	Arena* frame_arena = Arena_init(ml_malloc(arena_size), arena_size);
-
-	APP->frame_arena = frame_arena;
-
     return APP;
 }
 
