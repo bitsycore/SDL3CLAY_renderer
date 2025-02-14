@@ -14,15 +14,15 @@
 // MARK: Warnings
 // ================================
 
-#define WARN_FORMAT(msg, ...) do { \
-    char* callstack__ = print_call_stack();\
-    fprintf(stderr, "\n---- [WARNING] ----\nInfo: " msg "\nFile: %s:%d\nFunction: %s\nCallstack:\n%s-------------------\n", __VA_ARGS__, __FILE__, __LINE__, __func__, callstack__); \
-    free(callstack__); \
-} while (0)
-
 #define WARN(msg) do { \
     char* callstack__ = print_call_stack();\
     fprintf(stderr, "\n---- [WARNING] ----\nInfo: %s\nFile: %s:%d\nFunction: %s\nCallstack:\n%s-------------------\n", msg, __FILE__, __LINE__, __func__, callstack__); \
+    free(callstack__); \
+} while (0)
+
+#define WARN_FORMAT(msg, ...) do { \
+    char* callstack__ = print_call_stack();\
+    fprintf(stderr, "\n---- [WARNING] ----\nInfo: " msg "\nFile: %s:%d\nFunction: %s\nCallstack:\n%s-------------------\n", __VA_ARGS__, __FILE__, __LINE__, __func__, callstack__); \
     free(callstack__); \
 } while (0)
 
@@ -111,14 +111,15 @@ if ((expected) == (actual)) { \
 
 #else
 
-#define WARN_FORMAT(msg, ...)
 #define WARN(msg)
+#define WARN_FORMAT(msg, ...)
 #define WARN_IF(expr, msg)
 #define WARN_IF_NOT(expr, msg)
 #define WARN_IF_EQUAL(expected, actual, msg)
 #define WARN_IF_NOT_EQUAL(expected, actual, msg)
+
 #define EXIT(msg) exit(EXIT_FAILURE)
-#define EXIT_IF(expr, msg) if ((expr)) exit(EXIT_FAILURE)
+#define EXIT_IF(expr, msg) if (expr) exit(EXIT_FAILURE)
 #define EXIT_IF_NOT(expr, msg) if (!(expr)) exit(EXIT_FAILURE)
 #define EXIT_IF_NOT_EQUAL(expected, actual, msg) if ((expected) != (actual)) exit(EXIT_FAILURE)
 #define EXIT_IF_EQUAL(expected, actual, msg) if ((expected) == (actual)) exit(EXIT_FAILURE)
