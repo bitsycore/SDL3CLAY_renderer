@@ -8,20 +8,27 @@
 #include "common/arena.h"
 
 typedef struct {
-	float renderer_zoom;
-	int window_width, window_height;
+
+	// Frame State
+	Uint64 delta_last_time;
+	float delta;
+
+	// Input State
 	bool isMouseDown;
 	float mousePositionX, mousePositionY;
 	float mouseWheelX, mouseWheelY;
+
+	// SDL State
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	SDL_Texture* img_profile;
-	SDL_Texture* img_profile2;
+
+	// Window/Renderer State
+	float renderer_zoom;
+	int window_width, window_height;
+
+	// Clay State
 	void* clay_memory;
-	Uint64 delta_last_time;
-	float delta;
-	float scroll_speed;
-	SDL_Texture * img_bg;
+
 } AppState;
 
 AppState* AppState_new();
