@@ -9,20 +9,19 @@
 #include "../../common/memory_leak.h"
 
 static void ScreenProfile_init(AppState *APP, void **screen_state) {
-    Data* const data = ml_malloc(sizeof(Data));
+    Data* DATA = ml_malloc(sizeof(Data));
 
-    const size_t arena_size = Arena_requiredSize(1024*1024);
-    data->arena = Arena_init(ml_malloc(arena_size), arena_size);
+    const size_t arena_size = Arena_requiredSize(128);
+    DATA->arena = Arena_init(ml_malloc(arena_size), arena_size);
 
-    data->img_profile1 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
-    data->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
+    DATA->img_profile1 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
+    DATA->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
 
-    *screen_state = data;
+    *screen_state = DATA;
 }
 
 static void ScreenProfile_update(AppState *APP, void *screen_state) {
     Data* DATA = screen_state;
-
     Arena_reset(DATA->arena);
 
     // ========================================
@@ -74,9 +73,7 @@ static void ScreenProfile_update(AppState *APP, void *screen_state) {
         CLAY(SideBar) {
             Profile_component(&DATA->img_profile1, &DATA->img_profile2, DATA->arena);
 
-            for (int i = 0; i < 30; i++) {
-                SidebarItem_component(i % 5 * 16);
-            }
+            SidebarItem_component(11 % 5 * 16);
 
             CLAY(MainContent) { SidebarItem_component(32); }
         }
