@@ -22,7 +22,8 @@ static void ScreenProfile_init(AppState *APP, void **screen_state) {
 
 static void ScreenProfile_update(AppState *APP, void *screen_state) {
     Data* DATA = screen_state;
-    Arena_reset(screen_state);
+
+    Arena_reset(DATA->arena);
 
     // ========================================
     // Clay Layout
