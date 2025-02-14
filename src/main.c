@@ -147,7 +147,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 SDL_AppResult SDL_AppIterate(void* appstate) {
 	if (ScreenManager_isScreenReadyToUpdate()) {
 		AppState* APP = appstate;
-		Arena_reset(APP->frame_arena);
 
 		// ==============================
 		// Delta Calculation

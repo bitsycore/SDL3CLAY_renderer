@@ -21,7 +21,6 @@ typedef struct {
 	Uint64 delta_last_time;
 	float delta;
 	float scroll_speed;
-	Arena* frame_arena;
 	SDL_Texture * img_bg;
 } AppState;
 
