@@ -2,9 +2,7 @@
 #define ARENA2_H
 
 #include <stdlib.h>
-#include <stddef.h>
-
-#include "error_handling.h"
+#include "../common/error_handling.h"
 
 typedef struct {
 	size_t capacity;
@@ -12,12 +10,30 @@ typedef struct {
 	void* buf;
 } Arena;
 
-size_t Arena_requiredSize(size_t capacity);
+#define Arena_requiredSize(size) (sizeof(Arena) + size)
 
-Arena* Arena_init(void* buffer, size_t capacity);
+#define Arena_init(buffer, size) ({ \
+	Arena* arena = (Arena*)(buffer); \
+	EXIT_IF(\
+		(size) <= sizeof(Arena),\
+		"Capacity must be greater than the size of arena_t, "\
+		"use Arena_requiredSize to calculate the required size"\
+	);\
+	arena->capacity = (size) - sizeof(Arena); \
+	arena->current = (char*)arena + sizeof(Arena); \
+	arena->buf = arena->current; \
+	arena; \
+})
 
-void Arena_reset(Arena* arena);
+#define Arena_alloc(arena, size) ({ \
+	EXIT_IF(arena == NULL, "Arena is NULL"); \
+	EXIT_IF(size <= 0, "Size must be greater than 0"); /*NOLINT(*-sizeof-expression)*/ \
+	void* ptr = arena->current; \
+	arena->current = (char*) arena->current + size; \
+	(size_t)(arena->buf + arena->capacity - arena->current) < size ? NULL : ptr; \
+})
 
-void* Arena_alloc(Arena* arena, size_t size);
+#define Arena_reset(arena) EXIT_IF(arena == NULL, "Arena is NULL");\
+	arena->current = arena->buf
 
 #endif

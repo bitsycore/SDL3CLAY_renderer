@@ -138,19 +138,18 @@ endif ()
 
 add_executable(SDL3CLAY
         src/main.c
-        src/renderer/SDL3CLAY.c
-        src/ui/components/component_profile.c
-        src/ui/colors.c
         src/appstate.c
+        src/renderer/SDL3CLAY.c
         src/common/debug.c
         src/common/hash.c
         src/common/memory_leak.c
+        src/common/uuid.c
+        src/ui/colors.c
         src/ui/screen_manager.c
         src/ui/screens/screen_profile.c
-        src/common/uuid.c
         src/ui/components/component_debug_button.c
         src/ui/components/component_sidebar_item.c
-        src/common/arena.c
+        src/ui/components/component_profile.c
 )
 
 target_include_directories(SDL3CLAY PRIVATE ${CMAKE_SOURCE_DIR}/vendor/clay)

@@ -11,41 +11,58 @@ typedef struct AllocationInfo {
 	size_t size;
 	const char* file;
 	int line;
-	struct AllocationInfo* next;
 } AllocationInfo;
 
+#define ALLOCATION_INFO_DEFAULT_SIZE 256
+#define ALLOCATION_INFO_GROWTH_FACTOR 2
+
 static AllocationInfo* ALLOCATION_LIST = NULL;
+static size_t ALLOCATION_LIST_SIZE = 0;
+static size_t ALLOCATION_LIST_CAPACITY = 0;
 
 static void add_allocation(void* address, const size_t size, const char* file, const int line) {
-	AllocationInfo* new_allocation = malloc(sizeof(AllocationInfo));
-	if (new_allocation == NULL) {
-		WARN("Error: Failed to allocate memory for allocation tracking!\n");
-		return;
-	}
-	new_allocation->address = address;
-	new_allocation->size = size;
-	new_allocation->file = file;
-	new_allocation->line = line;
-	new_allocation->next = ALLOCATION_LIST;
-	ALLOCATION_LIST = new_allocation;
+    if (ALLOCATION_LIST == NULL) {
+        ALLOCATION_LIST = malloc(sizeof(AllocationInfo) * ALLOCATION_INFO_DEFAULT_SIZE);
+        if (ALLOCATION_LIST == NULL) {
+            EXIT("Error: Failed to allocate initial memory for allocation tracking!\n");
+        }
+        ALLOCATION_LIST_CAPACITY = ALLOCATION_INFO_DEFAULT_SIZE;
+        ALLOCATION_LIST_SIZE = 0;
+    }
+
+    if (ALLOCATION_LIST_SIZE >= ALLOCATION_LIST_CAPACITY) {
+        size_t new_capacity = ALLOCATION_LIST_CAPACITY * ALLOCATION_INFO_GROWTH_FACTOR;
+        AllocationInfo* new_list = realloc(ALLOCATION_LIST, sizeof(AllocationInfo) * new_capacity);
+
+        if (new_list == NULL) {
+            free(ALLOCATION_LIST);
+            ALLOCATION_LIST = NULL; // Important to set to NULL after freeing.
+            ALLOCATION_LIST_CAPACITY = 0;
+            ALLOCATION_LIST_SIZE = 0;
+            EXIT("Error: Failed to reallocate memory for allocation tracking!\n");
+        }
+        ALLOCATION_LIST = new_list;
+        ALLOCATION_LIST_CAPACITY = new_capacity;
+    }
+
+    // Now that reallocation is handled, we can confidently add the new allocation
+    ALLOCATION_LIST[ALLOCATION_LIST_SIZE].address = address;
+    ALLOCATION_LIST[ALLOCATION_LIST_SIZE].size = size;
+    ALLOCATION_LIST[ALLOCATION_LIST_SIZE].file = file;
+    ALLOCATION_LIST[ALLOCATION_LIST_SIZE].line = line;
+    ALLOCATION_LIST_SIZE++;
 }
 
 static void remove_allocation(const void* address) {
-	AllocationInfo* current = ALLOCATION_LIST;
-	AllocationInfo* previous = NULL;
-
-	while (current != NULL) {
-		if (current->address == address) {
-			if (previous == NULL) {
-				ALLOCATION_LIST = current->next;
-			} else {
-				previous->next = current->next;
+	for (size_t i = 0; i < ALLOCATION_LIST_SIZE; i++) {
+		if (ALLOCATION_LIST[i].address == address) {
+			// Move the last element to the current position if not already the last element
+			if (i < ALLOCATION_LIST_SIZE - 1) {
+				ALLOCATION_LIST[i] = ALLOCATION_LIST[ALLOCATION_LIST_SIZE - 1];
 			}
-			free(current);
+			ALLOCATION_LIST_SIZE--;
 			return;
 		}
-		previous = current;
-		current = current->next;
 	}
 }
 
@@ -85,17 +102,15 @@ void* imp_ml_realloc(void* (*custom_realloc)(void*, size_t), void* ptr, const si
 }
 
 void imp_ml_free(void (*custom_free)(void*), void* ptr) {
-	if (ptr != NULL) {
-		const AllocationInfo* current = ALLOCATION_LIST;
-		while (current != NULL) {
-			if (current->address == ptr) {
+	if (ptr != NULL && ALLOCATION_LIST_SIZE > 0) {
+		for (int i = 0; i < ALLOCATION_LIST_SIZE; i++) {
+			if (ALLOCATION_LIST[i].address == ptr) {
+				remove_allocation(ptr);
 				break;
 			}
-			current = current->next;
 		}
-		remove_allocation(ptr);
-		custom_free(ptr);
 	}
+	custom_free(ptr);
 }
 
 char* imp_ml_strdup(void* (*custom_malloc)(size_t), const char* s, const char* file, const int line) {
@@ -138,9 +153,7 @@ char* imp_ml_callback_strdup(const char* s) {
 // =========================================
 
 void imp_ml_print_memory_leaks() {
-	const AllocationInfo* current = ALLOCATION_LIST;
-
-	if (current == NULL) {
+	if (ALLOCATION_LIST == NULL || ALLOCATION_LIST_SIZE == 0) {
 		return;
 	}
 
@@ -149,30 +162,29 @@ void imp_ml_print_memory_leaks() {
 
 	printf("\n--------------------- [MEMORY LEAK DETECTED] ---------------------\n\n");
 
-	while (current != NULL) {
+	for (size_t i = 0; i < ALLOCATION_LIST_SIZE; i++) {
 		char size_str[20];
-		static const int GB = 1024 * 1024 * 1024;
-		static const int MB = 1024 * 1024;
-		static const int KB = 1024;
-		if (current->size >= GB) {
-			snprintf(size_str, sizeof(size_str), "%.2f GB", (double) current->size / GB);
-		} else if ((double) current->size >= MB) {
-			snprintf(size_str, sizeof(size_str), "%.2f MB", (double) current->size / MB);
-		} else if ((double) current->size >= KB) {
-			snprintf(size_str, sizeof(size_str), "%.2f KB", (double) current->size / KB);
+		static const size_t GB = 1024 * 1024 * 1024;
+		static const size_t MB = 1024 * 1024;
+		static const size_t KB = 1024;
+
+		if (ALLOCATION_LIST[i].size >= GB) {
+			snprintf(size_str, sizeof(size_str), "%.2f GB", (double)ALLOCATION_LIST[i].size / (double)GB);
+		} else if (ALLOCATION_LIST[i].size >= MB) {
+			snprintf(size_str, sizeof(size_str), "%.2f MB", (double)ALLOCATION_LIST[i].size / (double)MB);
+		} else if (ALLOCATION_LIST[i].size >= KB) {
+			snprintf(size_str, sizeof(size_str), "%.2f KB", (double)ALLOCATION_LIST[i].size / (double)KB);
 		} else {
-			snprintf(size_str, sizeof(size_str), "%zu Bytes", current->size);
+			snprintf(size_str, sizeof(size_str), "%zu Bytes", ALLOCATION_LIST[i].size);
 		}
 
 		printf(
-			"[%zu]    0x%p    %-11s    %s:%d\n",
-			number_leaked_block,
-			current->address, size_str,
-			current->file, current->line
+			"[%zu]    0x%p    %-11s    %s:%d\n", i,
+			ALLOCATION_LIST[i].address, size_str,
+			ALLOCATION_LIST[i].file, ALLOCATION_LIST[i].line
 		);
 
-		total_leaked_memory += current->size;
-		current = current->next;
+		total_leaked_memory += ALLOCATION_LIST[i].size;
 		number_leaked_block++;
 	}
 
@@ -181,19 +193,18 @@ void imp_ml_print_memory_leaks() {
 		"------------------------------------------------------------------\n"
 		"Blocks: %zu\t%zu bytes (%.2f KB, %.2f MB)\n"
 		"------------------------------------------------------------------\n",
-		number_leaked_block, total_leaked_memory, (double) total_leaked_memory / 1024.0,
-		(double) total_leaked_memory / (1024.0 * 1024.0)
+		number_leaked_block, total_leaked_memory, (float)total_leaked_memory / 1024.0,
+		(float)total_leaked_memory / (1024.0 * 1024.0)
 	);
+
+	imp_ml_cleanup_memory_tracking();
 }
 
 void imp_ml_cleanup_memory_tracking() {
-	AllocationInfo* current = ALLOCATION_LIST;
-
-	while (current != NULL) {
-		AllocationInfo* next = current->next;
-		free(current);
-		current = next;
+	if (ALLOCATION_LIST != NULL) {
+		free(ALLOCATION_LIST);
+		ALLOCATION_LIST = NULL;
+		ALLOCATION_LIST_SIZE = 0;
+		ALLOCATION_LIST_CAPACITY = 0;
 	}
-
-	ALLOCATION_LIST = NULL;
 }
