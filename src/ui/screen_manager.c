@@ -18,7 +18,7 @@ Screen* ScreenManager_getCurrentScreen() {
 void ScreenManager_runScreenInit(AppState* APP) {
 	if (!CURRENT_SCREEN.init_done) {
 		if (CURRENT_SCREEN.on_init) {
-			void *ptr = NULL;
+			void* ptr = NULL;
 			CURRENT_SCREEN.on_init(APP, &ptr);
 			CURRENT_SCREEN.state = ptr;
 		}

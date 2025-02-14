@@ -8,20 +8,16 @@
 #include "../components/component_sidebar_item.h"
 #include "../../common/memory_leak.h"
 
-typedef struct Data {
-    Arena *arena;
-    SDL_Texture* img_profile;
-    SDL_Texture* img_profile2;
-} Data;
-
 static void ScreenProfile_init(AppState *APP, void **screen_state) {
     Data* const data = ml_malloc(sizeof(Data));
-    *screen_state = data;
+
     const size_t arena_size = Arena_requiredSize(1024*1024);
     data->arena = Arena_init(ml_malloc(arena_size), arena_size);
 
-    data->img_profile = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
-    data->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
+    data->img_profile1 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
+    data->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
+
+    *screen_state = data;
 }
 
 static void ScreenProfile_update(AppState *APP, void *screen_state) {
@@ -75,7 +71,7 @@ static void ScreenProfile_update(AppState *APP, void *screen_state) {
 
     CLAY(OuterContainer) {
         CLAY(SideBar) {
-            Profile_component(DATA->img_profile, DATA->img_profile2, APP);
+            Profile_component(&DATA->img_profile1, &DATA->img_profile2, DATA->arena);
 
             for (int i = 0; i < 30; i++) {
                 SidebarItem_component(i % 5 * 16);
@@ -88,7 +84,7 @@ static void ScreenProfile_update(AppState *APP, void *screen_state) {
 
 static void ScreenProfile_destroy(AppState *APP, void *screen_state) {
     const Data* DATA = screen_state;
-    SDL_DestroyTexture(DATA->img_profile);
+    SDL_DestroyTexture(DATA->img_profile1);
     SDL_DestroyTexture(DATA->img_profile2);
     ml_free(DATA->arena);
     ml_free(screen_state);
@@ -104,6 +100,6 @@ Screen ScreenProfile_new() {
         .on_destroy = ScreenProfile_destroy,
         .init_done = false,
         .destroy_done = false,
-        .update_rate_ms = SCREEN_FPS_TO_MS(60)
+        .update_rate_ms = SCREEN_FPS_TO_MS(30)
     };
 }
