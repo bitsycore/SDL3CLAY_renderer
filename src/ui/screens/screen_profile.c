@@ -1,22 +1,31 @@
-//
-// Created by Doge on 12/02/2025.
-//
-
 #include "screen_profile.h"
 
 #include <clay.h>
-#include "../../common/memory_leak.h"
+#include <SDL3_image/SDL_image.h>
 #include "../colors.h"
 #include "../screen_manager.h"
 #include "../components/component_profile.h"
 #include "../components/component_sidebar_item.h"
+#include "../../common/memory_leak.h"
+
+typedef struct Data {
+    Arena *arena;
+    SDL_Texture* img_profile;
+    SDL_Texture* img_profile2;
+} Data;
 
 static void ScreenProfile_init(AppState *APP, void **screen_state) {
+    Data* const data = ml_malloc(sizeof(Data));
+    *screen_state = data;
     const size_t arena_size = Arena_requiredSize(1024*1024);
-    *screen_state = Arena_init(ml_malloc(arena_size), arena_size);
+    data->arena = Arena_init(ml_malloc(arena_size), arena_size);
+
+    data->img_profile = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
+    data->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
 }
 
 static void ScreenProfile_update(AppState *APP, void *screen_state) {
+    Data* DATA = screen_state;
     Arena_reset(screen_state);
 
     // ========================================
@@ -66,7 +75,7 @@ static void ScreenProfile_update(AppState *APP, void *screen_state) {
 
     CLAY(OuterContainer) {
         CLAY(SideBar) {
-            Profile_component(APP);
+            Profile_component(DATA->img_profile, DATA->img_profile2, APP);
 
             for (int i = 0; i < 30; i++) {
                 SidebarItem_component(i % 5 * 16);
@@ -78,6 +87,10 @@ static void ScreenProfile_update(AppState *APP, void *screen_state) {
 }
 
 static void ScreenProfile_destroy(AppState *APP, void *screen_state) {
+    const Data* DATA = screen_state;
+    SDL_DestroyTexture(DATA->img_profile);
+    SDL_DestroyTexture(DATA->img_profile2);
+    ml_free(DATA->arena);
     ml_free(screen_state);
 }
 

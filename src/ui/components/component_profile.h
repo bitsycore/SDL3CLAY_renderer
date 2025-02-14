@@ -3,6 +3,6 @@
 
 #include "../../appstate.h"
 
-void Profile_component(AppState* APP);
+void Profile_component(SDL_Texture* IMG1, SDL_Texture* IMG2, AppState* APP);
 
 #endif //PROFILE_COMPONENTS_H

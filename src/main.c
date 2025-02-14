@@ -61,8 +61,6 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 	// ===============================
 	// Init Test Texture
-	APP->img_profile = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
-	APP->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
 	APP->img_bg = IMG_LoadTexture(APP->renderer, "assets/bg.jpg");
 
 	// ===============================

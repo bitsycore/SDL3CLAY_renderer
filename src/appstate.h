@@ -9,6 +9,9 @@
 
 typedef struct {
 
+	// Settings
+	float scroll_speed;
+
 	// Frame State
 	Uint64 delta_last_time;
 	float delta;
@@ -28,6 +31,9 @@ typedef struct {
 
 	// Clay State
 	void* clay_memory;
+
+	// Ressources
+	SDL_Texture* img_bg;
 
 } AppState;
 

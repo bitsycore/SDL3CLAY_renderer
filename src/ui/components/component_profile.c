@@ -9,17 +9,13 @@ static void onHover(Clay_ElementId elementId, Clay_PointerData pointerInfo, intp
 		return;
 	}
 
-	AppState* APP = (AppState*) userData;
-
 	if (pointerInfo.state == CLAY_POINTER_DATA_RELEASED_THIS_FRAME) {
-		SDL_Texture* temp = APP->img_profile;
-		APP->img_profile = APP->img_profile2;
-		APP->img_profile2 = temp;
+		SDL_Log("Profile Picture Clicked!\n");
 	}
 }
 
 
-void Profile_component(AppState* APP) {
+void Profile_component(SDL_Texture* IMG1, SDL_Texture* IMG2, AppState* APP) {
 	const Clay_ElementDeclaration ProfilePictureOuterConfig = {
 		.layout = {
 			.sizing = {
@@ -42,7 +38,7 @@ void Profile_component(AppState* APP) {
 			}
 		},
 		.image = {
-			.imageData = APP->img_profile,
+			.imageData = IMG1,
 			.sourceDimensions = {60, 60},
 		}
 	};
