@@ -7,123 +7,96 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
+set(COMPILER_MSVC "MSVC")
+set(COMPILER_MINGW "MinGW")
+set(COMPILER_GCC "GCC")
+set(COMPILER_CLANG "Clang")
+set(COMPILER_UNKNOWN "Unknown")
+
+set(OS_WINDOWS "Windows")
+set(OS_MACOS "macOS")
+set(OS_IOS "iOS")
+set(OS_LINUX "Linux")
+set(OS_ANDROID "Android")
+set(OS_UNKNOWN "Unknown")
+
+# Detect OS
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(DETECTED_OS ${OS_WINDOWS})
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    if (CMAKE_OSX_SYSROOT MATCHES ".*iPhoneOS.*")
+        set(DETECTED_OS ${OS_IOS})
+    else()
+        set(DETECTED_OS ${OS_MACOS})
+    endif()
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(DETECTED_OS ${OS_LINUX})
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android")
+    set(DETECTED_OS ${OS_ANDROID})
+else()
+    set(DETECTED_OS ${OS_UNKNOWN})
+endif()
+
+message(STATUS "Detected OS: ${DETECTED_OS}")
+
+# Detect Compiler
+if (MSVC)
+    set(DETECTED_COMPILER ${COMPILER_MSVC})
+elseif (MINGW)
+    set(DETECTED_COMPILER ${COMPILER_MINGW})
+elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    set(DETECTED_COMPILER ${COMPILER_GCC})
+elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(DETECTED_COMPILER ${COMPILER_CLANG})
+else()
+    set(DETECTED_COMPILER ${COMPILER_UNKNOWN})
+endif()
+
+message(STATUS "Detected Compiler: ${DETECTED_COMPILER}")
+
 # ============================================================================================
 # MARK: SDL3
 # ============================================================================================
 
-if (NOT USE_FETCH_SDL)
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        if (APPLE OR UNIX)
-            find_package(SDL3)
-            if (NOT SDL3_FOUND)
-                set(USE_FETCH_SDL TRUE)
-            endif ()
-        else ()
-            if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3/mingw/cmake/SDL3Config.cmake")
-                include("vendor/SDL3/mingw/cmake/SDL3Config.cmake")
-            else ()
-                set(USE_FETCH_SDL TRUE)
-            endif ()
-        endif ()
-    elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-        if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3/vc/cmake/SDL3Config.cmake")
-            include("vendor/SDL3/vc/cmake/SDL3Config.cmake")
-        else ()
-            set(USE_FETCH_SDL TRUE)
-        endif ()
-    else ()
-        message(WARNING "Unsupported compiler: ${CMAKE_C_COMPILER_ID}")
+function(fetch_module_if_needed module_name git_repository git_tag)
+    set(USE_FETCH_SDL_LOCAL FALSE)
+
+    if (NOT USE_FETCH_SDL)
+        if(DETECTED_OS STREQUAL OS_WINDOWS)
+            if(DETECTED_COMPILER STREQUAL COMPILER_MSVC AND EXISTS "${CMAKE_SOURCE_DIR}/vendor/${module_name}/vc/cmake/${module_name}Config.cmake")
+                include("${CMAKE_SOURCE_DIR}/vendor/${module_name}/vc/cmake/${module_name}Config.cmake")
+            elseif(DETECTED_COMPILER STREQUAL COMPILER_MINGW AND EXISTS "${CMAKE_SOURCE_DIR}/vendor/${module_name}/mingw/cmake/${module_name}Config.cmake")
+                include("${CMAKE_SOURCE_DIR}/vendor/${module_name}/mingw/cmake/${module_name}Config.cmake")
+            else()
+                set(USE_FETCH_SDL_LOCAL TRUE)
+            endif()
+        elseif(DETECTED_OS STREQUAL OS_MACOS)
+            find_package(${module_name})
+            if(NOT ${module_name}_FOUND)
+                set(USE_FETCH_SDL_LOCAL TRUE)
+            endif()
+        elseif(DETECTED_OS STREQUAL OS_LINUX)
+            find_package(${module_name})
+            if (NOT ${module_name}_FOUND)
+                set(USE_FETCH_SDL_LOCAL TRUE)
+            endif()
+        endif()
+    endif()
+
+    if (USE_FETCH_SDL_LOCAL)
+        message("${module_name} not found, falling back to FetchContent.")
+        FetchContent_Declare(
+                ${module_name}
+                GIT_REPOSITORY ${git_repository}
+                GIT_TAG ${git_tag}
+        )
+        FetchContent_MakeAvailable(${module_name})
     endif ()
-endif ()
+endfunction()
 
-if (USE_FETCH_SDL)
-    message(WARNING "SDL3 not found, falling back to FetchContent.")
-    FetchContent_Declare(
-            SDL3
-            GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-            GIT_TAG release-3.2.4
-    )
-    FetchContent_MakeAvailable(SDL3)
-endif ()
-
-# ============================================================================================
-# MARK: SDL3_image
-# ============================================================================================
-
-if (NOT USE_FETCH_IMAGE)
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        if (APPLE OR UNIX)
-            find_package(SDL3_image)
-            if (NOT SDL3_IMAGE_FOUND)
-                set(USE_FETCH_IMAGE TRUE)
-            endif ()
-        else ()
-            if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3_image/mingw/cmake/SDL3_imageConfig.cmake")
-                include("vendor/SDL3_image/mingw/cmake/SDL3_imageConfig.cmake")
-            else ()
-                set(USE_FETCH_IMAGE TRUE)
-            endif ()
-        endif ()
-    elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-        if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3_image/vc/cmake/SDL3_imageConfig.cmake")
-            include("vendor/SDL3_image/vc/cmake/SDL3_imageConfig.cmake")
-        else ()
-            set(USE_FETCH_IMAGE TRUE)
-        endif ()
-    else ()
-        message(WARNING "Unsupported compiler: ${CMAKE_C_COMPILER_ID}")
-    endif ()
-endif ()
-
-if (USE_FETCH_IMAGE)
-    message(WARNING "SDL3_image not found, falling back to FetchContent.")
-    FetchContent_Declare(
-            SDL3_image
-            GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-            GIT_TAG release-3.2.0
-    )
-    FetchContent_MakeAvailable(SDL3_image)
-
-endif ()
-
-# ============================================================================================
-# MARK: SDL3_ttf
-# ============================================================================================
-
-if (NOT USE_FETCH_TTF)
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        if (APPLE OR UNIX)
-            find_package(SDL3_ttf)
-            if (NOT SDL3_TTF_FOUND)
-                set(USE_FETCH_TTF TRUE)
-            endif ()
-        else ()
-            if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3_ttf/mingw/cmake/SDL3_ttfConfig.cmake")
-                include("vendor/SDL3_ttf/mingw/cmake/SDL3_ttfConfig.cmake")
-            else ()
-                set(USE_FETCH_TTF TRUE)
-            endif ()
-        endif ()
-    elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-        if (EXISTS "${CMAKE_SOURCE_DIR}/vendor/SDL3_ttf/vc/cmake/SDL3_ttfConfig.cmake")
-            include("vendor/SDL3_ttf/vc/cmake/SDL3_ttfConfig.cmake")
-        else ()
-            set(USE_FETCH_TTF TRUE)
-        endif ()
-    else ()
-        message(WARNING "Unsupported compiler: ${CMAKE_C_COMPILER_ID}")
-    endif ()
-endif ()
-
-if (USE_FETCH_TTF)
-    message(WARNING "SDL3_ttf not found, falling back to FetchContent.")
-    FetchContent_Declare(
-            SDL3_ttf
-            GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
-            GIT_TAG preview-3.1.0
-    )
-    FetchContent_MakeAvailable(SDL3_ttf)
-endif ()
+fetch_module_if_needed("SDL3" "https://github.com/libsdl-org/SDL.git" "release-3.2.4")
+fetch_module_if_needed("SDL3_ttf" "https://github.com/libsdl-org/SDL_ttf.git" "preview-3.1.0")
+fetch_module_if_needed("SDL3_image" "https://github.com/libsdl-org/SDL_image.git" "release-3.2.0")
 
 # ============================================================================================
 # MARK: Executable
@@ -159,20 +132,24 @@ target_link_libraries(
 
 target_compile_definitions(SDL3CLAY PRIVATE $<$<CONFIG:Debug>:ENABLE_LEAK_DETECTOR=1>)
 
-if (MSVC)
+if (DETECTED_COMPILER STREQUAL COMPILER_MSVC)
     add_compile_options(
-        /we4047
-        /we4024
-        /we4090
+            /we4047
+            /we4024
+            /we4090
     )
-else()
+elseif (DETECTED_COMPILER STREQUAL COMPILER_CLANG)
     add_compile_options(
-        -Werror=pedantic
-        -Werror=conversion
-        -Werror=pointer-sign
-        -Werror=incompatible-pointer-types
+            -fblocks
     )
-endif()
+else ()
+    add_compile_options(
+            -Werror=pedantic
+            -Werror=conversion
+            -Werror=pointer-sign
+            -Werror=incompatible-pointer-types
+    )
+endif ()
 
 # ============================================================================================
 # MARK: Post Build

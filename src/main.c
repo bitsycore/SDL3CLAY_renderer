@@ -34,7 +34,7 @@
 void HandleClayErrors(Clay_ErrorData errorData) {
 	SDL_Log("%s", errorData.errorText.chars);
 	switch (errorData.errorType) {
-		default:
+		default:;
 	}
 }
 
