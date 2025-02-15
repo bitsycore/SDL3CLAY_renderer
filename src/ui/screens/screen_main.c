@@ -31,7 +31,7 @@ static void init(AppState *APP, void **screen_state) {
 }
 
 static void onClick(void* data) {
-    switch ((int)data) {
+    switch ((intptr_t)data) {
         case SCREEN_TEST_1:
             ScreenManager_setNextScreen(ScreenTest1_new());
             break;
