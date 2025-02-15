@@ -1,5 +1,7 @@
 #include "memory_leak.h"
 
+#if defined(ENABLE_LEAK_DETECTOR) && ENABLE_LEAK_DETECTOR != 0
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -152,6 +154,15 @@ char* imp_ml_callback_strdup(const char* s) {
 // MARK: Print
 // =========================================
 
+void imp_ml_cleanup_memory_tracking() {
+	if (ALLOCATION_LIST != NULL) {
+		free(ALLOCATION_LIST);
+		ALLOCATION_LIST = NULL;
+		ALLOCATION_LIST_SIZE = 0;
+		ALLOCATION_LIST_CAPACITY = 0;
+	}
+}
+
 void imp_ml_print_memory_leaks() {
 	if (ALLOCATION_LIST == NULL || ALLOCATION_LIST_SIZE == 0) {
 		return;
@@ -200,11 +211,4 @@ void imp_ml_print_memory_leaks() {
 	imp_ml_cleanup_memory_tracking();
 }
 
-void imp_ml_cleanup_memory_tracking() {
-	if (ALLOCATION_LIST != NULL) {
-		free(ALLOCATION_LIST);
-		ALLOCATION_LIST = NULL;
-		ALLOCATION_LIST_SIZE = 0;
-		ALLOCATION_LIST_CAPACITY = 0;
-	}
-}
+#endif

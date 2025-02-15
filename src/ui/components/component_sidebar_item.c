@@ -25,23 +25,59 @@ static inline Clay_ElementDeclaration config() {
 	};
 }
 
-static void onHover (Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+typedef struct onHoverEvent {
+	SidebarItem_onClickCallback onClick;
+	void* onClickData;
+} OnHoverEvent;
+
+static void onHover(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
 	if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-		Clay_SetDebugModeEnabled(true);
+		const OnHoverEvent* event = (OnHoverEvent*) userData;
+		if (event && event->onClick) {
+			event->onClick(event->onClickData);
+		}
 	}
 }
 
-void SidebarItem_component(const int i) {
+static void onHoverNoData(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+	if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+		const SidebarItem_onClickCallback event = (SidebarItem_onClickCallback) userData;
+		if (event) {
+			event(NULL);
+		}
+	}
+}
+
+void SidebarItem_componentWithData(
+	const Clay_String text,
+	const SidebarItem_onClickCallback onClick,
+	Arena* frameData,
+	void* onClickData
+) {
 	CLAY(config()) {
-		Clay_OnHover(onHover, (intptr_t)NULL);
+		if (frameData) {
+			OnHoverEvent* event = Arena_alloc(frameData, sizeof(OnHoverEvent));
+			event->onClick = onClick;
+			event->onClickData = onClickData;
+			Clay_OnHover(onHover, (intptr_t) event);
+		} else {
+			Clay_OnHover(onHoverNoData, (intptr_t) onClick);
+		}
 		CLAY_TEXT(
-			CLAY_STRING("Sidebar Item"),
+			text,
 			CLAY_TEXT_CONFIG(
 				{
-				.fontSize = i,
+				.fontSize = 24,
 				.textColor = Clay_Hovered() ? COLOR_LIGHT : COLOR_WHITE_NICE
 				}
 			)
 		);
 	}
+}
+
+void SidebarItem_component(
+	const Clay_String text,
+	const SidebarItem_onClickCallback onClick
+	) {
+	SidebarItem_componentWithData(text, onClick, NULL, NULL);
 }

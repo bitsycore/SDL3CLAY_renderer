@@ -1,28 +1,33 @@
-#include "screen_profile.h"
+#include "screen_test_2.h"
 
 #include <clay.h>
 #include <SDL3_image/SDL_image.h>
+
+#include "screen_main.h"
 #include "../colors.h"
 #include "../screen_manager.h"
 #include "../components/component_profile.h"
 #include "../components/component_sidebar_item.h"
 #include "../../common/memory_leak.h"
 
-static void ScreenProfile_init(AppState *APP, void **screen_state) {
+typedef struct Data {
+    SDL_Texture* img_profile1;
+} Data;
+
+static void init(AppState *APP, void **screen_state) {
     Data* DATA = ml_malloc(sizeof(Data));
 
-    const size_t arena_size = Arena_requiredSize(128);
-    DATA->arena = Arena_init(ml_malloc(arena_size), arena_size);
-
     DATA->img_profile1 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
-    DATA->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
 
     *screen_state = DATA;
 }
 
-static void ScreenProfile_update(AppState *APP, void *screen_state) {
+static void onClick(void* event) {
+    ScreenManager_setNextScreen(ScreenMain_new());
+}
+
+static void update(AppState *APP, void *screen_state) {
     Data* DATA = screen_state;
-    Arena_reset(DATA->arena);
 
     // ========================================
     // Clay Layout
@@ -56,48 +61,34 @@ static void ScreenProfile_update(AppState *APP, void *screen_state) {
         }
     };
 
-    const Clay_ElementDeclaration MainContent = {
-        .id = CLAY_ID("MainContent"),
-        .layout = {
-            .sizing = {
-                .width = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIT()
-            },
-            .padding = CLAY_PADDING_ALL(64)
-        },
-        .backgroundColor = COLOR_BLACK_NICE,
-        .cornerRadius = CLAY_CORNER_RADIUS(8)
-    };
-
     CLAY(OuterContainer) {
         CLAY(SideBar) {
-            Profile_component(&DATA->img_profile1, &DATA->img_profile2, DATA->arena);
-
-            SidebarItem_component(11 % 5 * 16);
-
-            CLAY(MainContent) { SidebarItem_component(32); }
+            Profile_component(&DATA->img_profile1, NULL, NULL);
+            CLAY_TEXT(
+                CLAY_STRING("Test_2"),
+                CLAY_TEXT_CONFIG({ .fontSize = 32, .textColor = COLOR_WHITE_NICE })
+            );
+            SidebarItem_component(CLAY_STRING("Main Menu"), onClick);
         }
     }
 }
 
-static void ScreenProfile_destroy(AppState *APP, void *screen_state) {
-    const Data* DATA = screen_state;
+static void destroy(AppState *APP, void *screen_state) {
+    Data* DATA = screen_state;
     SDL_DestroyTexture(DATA->img_profile1);
-    SDL_DestroyTexture(DATA->img_profile2);
-    ml_free(DATA->arena);
-    ml_free(screen_state);
+    ml_free(DATA);
 }
 
-Screen ScreenProfile_new() {
+Screen ScreenTest2_new() {
     return (Screen){
         .uuid = UUID_new(),
-        .type_id = SCREEN_LIST_PROFILE,
+        .type_id = SCREEN_TEST_1,
         .state = NULL,
-        .on_init = ScreenProfile_init,
-        .on_update = ScreenProfile_update,
-        .on_destroy = ScreenProfile_destroy,
+        .on_init = init,
+        .on_update = update,
+        .on_destroy = destroy,
         .init_done = false,
         .destroy_done = false,
-        .update_rate_ms = SCREEN_FPS_TO_MS(30)
+        .update_rate_ms = SCREEN_FPS_TO_MS(60)
     };
 }

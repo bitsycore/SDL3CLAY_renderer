@@ -111,6 +111,8 @@ if ((expected) == (actual)) { \
 
 #else
 
+#include <assert.h>
+
 #define WARN(msg)
 #define WARN_FORMAT(msg, ...)
 #define WARN_IF(expr, msg)
@@ -118,11 +120,11 @@ if ((expected) == (actual)) { \
 #define WARN_IF_EQUAL(expected, actual, msg)
 #define WARN_IF_NOT_EQUAL(expected, actual, msg)
 
-#define EXIT(msg) exit(EXIT_FAILURE)
-#define EXIT_IF(expr, msg) if (expr) exit(EXIT_FAILURE)
-#define EXIT_IF_NOT(expr, msg) if (!(expr)) exit(EXIT_FAILURE)
-#define EXIT_IF_NOT_EQUAL(expected, actual, msg) if ((expected) != (actual)) exit(EXIT_FAILURE)
-#define EXIT_IF_EQUAL(expected, actual, msg) if ((expected) == (actual)) exit(EXIT_FAILURE)
+#define EXIT(msg)
+#define EXIT_IF(expr, msg)
+#define EXIT_IF_NOT(expr, msg)
+#define EXIT_IF_NOT_EQUAL(expected, actual, msg)
+#define EXIT_IF_EQUAL(expected, actual, msg)
 
 #endif // NDEBUG
 

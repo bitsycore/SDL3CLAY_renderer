@@ -10,10 +10,12 @@ struct HoverEvent {
 
 static void onHover(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
 	if (pointerInfo.state == CLAY_POINTER_DATA_RELEASED_THIS_FRAME) {
-		const struct HoverEvent * event = (struct HoverEvent *)userData;
-		SDL_Texture* temp = *event->img1;
-		*event->img1 = *event->img2;
-		*event->img2 = temp;
+		if (userData) {
+			const struct HoverEvent * event = (struct HoverEvent *)userData;
+			SDL_Texture* temp = *event->img1;
+			*event->img1 = *event->img2;
+			*event->img2 = temp;
+		}
 	}
 }
 
@@ -45,13 +47,18 @@ void Profile_component(SDL_Texture** IMG1, SDL_Texture** IMG2, Arena* FRAME_AREN
 		}
 	};
 
-	struct HoverEvent * event =  Arena_alloc(FRAME_ARENA, sizeof(struct HoverEvent));
-	event->img1 = IMG1;
-	event->img2 = IMG2;
-
 	CLAY(ProfilePictureOuterConfig) {
 		CLAY(ProfilePictureConfig) {
-			Clay_OnHover(onHover, (intptr_t)event);
+			if (FRAME_ARENA) {
+				struct HoverEvent * event =  Arena_alloc(FRAME_ARENA, sizeof(struct HoverEvent));
+				event->img1 = IMG1;
+				event->img2 = IMG2;
+				Clay_OnHover(onHover, (intptr_t)event);
+			}
+			else {
+				Clay_OnHover(onHover, (intptr_t) NULL);
+			}
+
 		}
 		CLAY_TEXT(
 			CLAY_STRING("Clay - UI Library"),

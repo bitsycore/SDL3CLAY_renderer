@@ -8,7 +8,10 @@
 #define SCREEN_FPS_TO_MS(FPS) 1000.0f/(FPS)
 
 typedef enum ScreenList {
-    SCREEN_LIST_PROFILE = 0,
+    SCREEN_MAIN = 0,
+    SCREEN_TEST_1 = 1,
+    SCREEN_TEST_2 = 2,
+    SCREEN_TEST_3 = 3,
 } ScreenList;
 
 typedef void (*ScreenInitFun)(AppState * APP, void ** screen_state);

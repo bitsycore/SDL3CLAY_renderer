@@ -28,7 +28,7 @@
 #include "common/memory_leak.h"
 #include "ui/colors.h"
 #include "ui/screen_manager.h"
-#include "ui/screens/screen_profile.h"
+#include "ui/screens/screen_main.h"
 #include "ui/components/component_debug_button.h"
 
 void HandleClayErrors(Clay_ErrorData errorData) {
@@ -86,7 +86,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 	// ==============================
 	// Set Screen to Load
-	ScreenManager_setNextScreen(ScreenProfile_new());
+	ScreenManager_setNextScreen(ScreenMain_new());
 
 	return SDL_APP_CONTINUE;
 }
