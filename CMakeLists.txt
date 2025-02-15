@@ -36,22 +36,15 @@ if (NOT USE_FETCH_SDL)
     endif ()
 endif ()
 
-#if (USE_FETCH_SDL)
-#    message(WARNING "SDL3 not found, falling back to FetchContent.")
-#    FetchContent_Declare(
-#            SDL3
-#            GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-#            GIT_TAG release-3.2.4
-#    )
-#    FetchContent_MakeAvailable(SDL3)
-#endif ()
-
-FetchContent_Declare(
-        SDL3
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG release-3.2.4
-)
-FetchContent_MakeAvailable(SDL3)
+if (USE_FETCH_SDL)
+    message(WARNING "SDL3 not found, falling back to FetchContent.")
+    FetchContent_Declare(
+            SDL3
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+            GIT_TAG release-3.2.4
+    )
+    FetchContent_MakeAvailable(SDL3)
+endif ()
 
 # ============================================================================================
 # MARK: SDL3_image
@@ -188,7 +181,7 @@ endif()
 # Copy SDL3 shared libraries to runtime folder
 add_custom_command(TARGET SDL3CLAY POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:SDL3-shared>
+        $<TARGET_FILE:SDL3::SDL3>
         $<TARGET_FILE:SDL3_ttf::SDL3_ttf>
         $<TARGET_FILE:SDL3_image::SDL3_image>
         $<TARGET_FILE_DIR:SDL3CLAY>
