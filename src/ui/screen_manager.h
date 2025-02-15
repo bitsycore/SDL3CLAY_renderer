@@ -14,9 +14,9 @@ typedef enum ScreenList {
     SCREEN_TEST_3 = 3,
 } ScreenList;
 
-typedef void (*ScreenInitFun)(AppState * APP, void ** screen_state);
-typedef void (*ScreenUpdateFun)(AppState * APP, void * screen_state);
-typedef void (*ScreenDestroyFun)(AppState * APP, void * screen_state);
+typedef void* (*ScreenInitFun)(AppState * APP);
+typedef void (*ScreenUpdateFun)(AppState * APP, void * screenState);
+typedef void (*ScreenDestroyFun)(AppState * APP, void * screenState);
 
 typedef struct Screen {
     UUID uuid;
@@ -36,7 +36,9 @@ Screen* ScreenManager_getCurrentScreen();
 
 void ScreenManager_runScreenInit(AppState * APP);
 void ScreenManager_runScreenUpdate(AppState * APP);
-void ScreenManager_runScreenDestroy(AppState* APP, bool is_app_quit);
+void ScreenManager_runScreenDestroy(AppState* APP);
+
+void ScreenManager_end(AppState* APP);
 
 bool ScreenManager_isScreenReadyToUpdate();
 

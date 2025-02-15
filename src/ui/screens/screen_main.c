@@ -18,7 +18,7 @@ typedef struct Data {
     SDL_Texture* img_profile2;
 } Data;
 
-static void init(AppState *APP, void **screen_state) {
+static void* init(AppState *APP) {
     Data* DATA = ml_malloc(sizeof(Data));
 
     const size_t arena_size = Arena_requiredSize(512);
@@ -27,7 +27,7 @@ static void init(AppState *APP, void **screen_state) {
     DATA->img_profile1 = IMG_LoadTexture(APP->renderer, "assets/avatar.jpg");
     DATA->img_profile2 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
 
-    *screen_state = DATA;
+    return DATA;
 }
 
 static void onClick(void* data) {

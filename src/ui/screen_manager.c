@@ -18,23 +18,30 @@ Screen* ScreenManager_getCurrentScreen() {
 void ScreenManager_runScreenInit(AppState* APP) {
 	if (!CURRENT_SCREEN.init_done) {
 		if (CURRENT_SCREEN.on_init) {
-			void* ptr = NULL;
-			CURRENT_SCREEN.on_init(APP, &ptr);
-			CURRENT_SCREEN.state = ptr;
+			CURRENT_SCREEN.state = CURRENT_SCREEN.on_init(APP);
 		}
-
 		CURRENT_SCREEN.init_done = true;
 	}
 }
 
-void ScreenManager_runScreenUpdate(AppState *APP) {
+void ScreenManager_runScreenUpdate(AppState* APP) {
 	if (CURRENT_SCREEN.on_update) {
 		CURRENT_SCREEN.on_update(APP, CURRENT_SCREEN.state);
 	}
 }
 
-void ScreenManager_runScreenDestroy(AppState *APP, const bool is_app_quit) {
-	if (!CURRENT_SCREEN.destroy_done && ( NEXT_SCREEN_READY || is_app_quit) ) {
+void ScreenManager_runScreenDestroy(AppState* APP) {
+	if (!CURRENT_SCREEN.destroy_done && NEXT_SCREEN_READY ) {
+		if (CURRENT_SCREEN.on_destroy) {
+			CURRENT_SCREEN.on_destroy(APP, CURRENT_SCREEN.state);
+		}
+		CURRENT_SCREEN = NEXT_SCREEN;
+		NEXT_SCREEN_READY = false;
+	}
+}
+
+void ScreenManager_end(AppState* APP) {
+	if (!CURRENT_SCREEN.destroy_done) {
 		if (CURRENT_SCREEN.on_destroy) {
 			CURRENT_SCREEN.on_destroy(APP, CURRENT_SCREEN.state);
 		}
@@ -51,7 +58,7 @@ bool ScreenManager_isScreenReadyToUpdate() {
 	const uint64_t current_time = SDL_GetTicks();
 	const uint64_t elapsed_time = current_time - CURRENT_SCREEN.last_update_time;
 
-	if ((float) elapsed_time >= CURRENT_SCREEN.update_rate_ms) {
+	if ((float)elapsed_time >= CURRENT_SCREEN.update_rate_ms) {
 		CURRENT_SCREEN.last_update_time = current_time;
 		return true;
 	}

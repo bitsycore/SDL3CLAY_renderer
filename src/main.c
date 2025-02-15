@@ -172,7 +172,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
 		ScreenManager_runScreenInit(APP);
 		ScreenManager_runScreenUpdate(APP);
-		ScreenManager_runScreenDestroy(APP, false);
+		ScreenManager_runScreenDestroy(APP);
 
 		// ========================================
 		// Clay Render
@@ -193,7 +193,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
 	AppState* APP = appstate;
-	ScreenManager_runScreenDestroy(APP, true);
+	ScreenManager_end(APP);
 	SDLCLAY_Quit();
 	ml_free(APP->clay_memory);
 	ml_free(APP);

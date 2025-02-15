@@ -14,12 +14,12 @@ typedef struct Data {
     SDL_Texture* img_profile1;
 } Data;
 
-static void init(AppState *APP, void **screen_state) {
+static void* init(AppState *APP) {
     Data* DATA = ml_malloc(sizeof(Data));
 
     DATA->img_profile1 = IMG_LoadTexture(APP->renderer, "assets/avatar2.png");
 
-    *screen_state = DATA;
+    return DATA;
 }
 
 static void onClick(void* event) {

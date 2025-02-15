@@ -12,6 +12,14 @@ typedef struct {
 	void* buf;
 } Arena;
 
+#if !( defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L )
+typedef union {
+	long long ll;
+	long double ld;
+	void* p;
+} max_align_t;
+#endif
+
 #define Arena_requiredSize(size) (sizeof(Arena) + size)
 
 #define Arena_init(buffer, size) ({ \
