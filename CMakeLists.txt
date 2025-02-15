@@ -20,6 +20,11 @@ set(OS_LINUX "Linux")
 set(OS_ANDROID "Android")
 set(OS_UNKNOWN "Unknown")
 
+set(BUILD_SYSTEM_NINJA "Ninja")
+set(BUILD_SYSTEM_MAKE "Make")
+set(BUILD_SYSTEM_MSVC "MSVC")
+set(BUILD_SYSTEM_UNKNOWN "Unknown")
+
 # Detect OS
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(DETECTED_OS ${OS_WINDOWS})
@@ -53,6 +58,19 @@ else()
 endif()
 
 message(STATUS "Detected Compiler: ${DETECTED_COMPILER}")
+
+# Detect Build System
+if (CMAKE_GENERATOR STREQUAL "Ninja")
+    set(DETECTED_BUILD_SYSTEM ${BUILD_SYSTEM_NINJA})
+elseif (CMAKE_GENERATOR MATCHES "(?i).*Makefile.*")
+    set(DETECTED_BUILD_SYSTEM ${BUILD_SYSTEM_MAKE})
+elseif (CMAKE_GENERATOR MATCHES "(?i).*Visual Studio.*" OR CMAKE_GENERATOR MATCHES "(?i).*MSVC.*")
+    set(DETECTED_BUILD_SYSTEM ${BUILD_SYSTEM_MSVC})
+else()
+    set(DETECTED_BUILD_SYSTEM ${BUILD_SYSTEM_UNKNOWN})
+endif ()
+
+message(STATUS "Detected Build System: ${DETECTED_BUILD_SYSTEM}")
 
 # ============================================================================================
 # MARK: SDL3
