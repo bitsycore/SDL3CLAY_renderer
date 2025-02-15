@@ -76,8 +76,6 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 		(Clay_ErrorHandler){HandleClayErrors }
 	);
 
-	Clay_SetDebugModeEnabled(true);
-
 	// ===============================
 	// Initialize SDL3CLAY
 	SDLCLAY_SetAllocator(ml_callback_malloc, ml_callback_free);
